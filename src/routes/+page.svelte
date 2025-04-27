@@ -232,10 +232,10 @@
 		<!-- Seção de Divisão de Despesas (Cards) -->
 		<section id="calculos" class="mb-5">
 			<h2 class="h4 fw-bold mb-3">Divisão das Despesas</h2>
-			<div class="row row-cols-1 row-cols-md-4 g-4">
+			<div class="row row-cols-1 g-4">
 				{#if membros.length === 0}
 					<div class="col-12">
-						<div class="card h-100" style="min-height: 150px;">
+						<div class="card h-100" style="min-height: 50px;">
 							<div class="card-body text-center d-flex align-items-center justify-content-center">
 								<p class="text-muted mb-0">A divisão vai aparecer aqui</p>
 							</div>
@@ -277,7 +277,7 @@
 						<tbody>
 							{#if despesas.length === 0}
 								<tr>
-									<td colspan="3" class="text-center text-muted" style="height: 100px;"
+									<td colspan="3" class="text-center text-muted" style="height: 50px;"
 										>Nenhuma despesa cadastrada</td
 									>
 								</tr>
@@ -324,7 +324,7 @@
 						<tbody>
 							{#if membros.length === 0}
 								<tr>
-									<td colspan="3" class="text-center text-muted" style="height: 100px;"
+									<td colspan="3" class="text-center text-muted" style="height: 50px;"
 										>Nenhum membro cadastrado</td
 									>
 								</tr>

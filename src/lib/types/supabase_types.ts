@@ -68,7 +68,7 @@ export type Database = {
           descricao: string
           id?: number
           updated_at?: string | null
-          valor?: number
+          valor: number
         }
         Update: {
           created_at?: string

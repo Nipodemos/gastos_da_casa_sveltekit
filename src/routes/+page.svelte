@@ -10,25 +10,12 @@
 		Label
 	} from '@sveltestrap/sveltestrap';
 	import { onMount } from 'svelte';
-	import { supabase } from '$lib/supabaseClient';
 
+	import { getPessoas, carregarPessoas } from '$lib/pessoas.store.svelte';
+
+	const pessoas = getPessoas();
 	// Interfaces para os dados do Supabase
-	interface Despesa {
-		id: number;
-		nome: string;
-		valor: number;
-	}
 
-	interface Pessoa {
-		id: number;
-		nome: string;
-		salario_bruto: number;
-		taxa_inss: number;
-		taxa_alimentacao: number;
-		taxa_transporte: number;
-		vale_alimentacao: number;
-		salario_liquido: number;
-	}
 	interface Divisao {
 		nome: string;
 		valorPagar: string;
@@ -36,8 +23,6 @@
 	}
 
 	// Estado reativo com $state
-	let despesas = $state<Despesa[]>([]);
-	let pessoas = $state<Pessoa[]>([]);
 
 	// Estados para controlar os modals e índices de remoção
 	let isDespesaModalOpen = $state(false);
@@ -64,26 +49,6 @@
 		await carregarDespesas();
 		await carregarPessoas();
 	});
-
-	// Função para carregar despesas do Supabase
-	async function carregarDespesas() {
-		const { data, error } = await supabase.from('despesas').select('*');
-		if (error) {
-			console.error('Erro ao carregar despesas:', error.message);
-			return;
-		}
-		despesas = data || [];
-	}
-
-	// Função para carregar pessoas do Supabase
-	async function carregarPessoas() {
-		const { data, error } = await supabase.from('pessoas').select('*');
-		if (error) {
-			console.error('Erro ao carregar pessoas:', error.message);
-			return;
-		}
-		pessoas = data || [];
-	}
 
 	// Funções utilitárias
 	function calcularSalarioLiquido(

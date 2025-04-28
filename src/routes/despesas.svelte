@@ -19,6 +19,8 @@
 	let despesas = getDespesas();
 	let isDespesaModalOpen = $state(false);
 	let isRemoverDespesaModalOpen = $state(false);
+	let botaoGravarDesabilitado = $state(false); // Estado para habilitar/desabilitar o botão de gravação
+	let botaoGravarDeleteDesabilitado = $state(false); // Estado para habilitar/desabilitar o botão de gravação
 	let removerDespesaId = $state<number | null>(null);
 	const totalDespesas = $derived(despesas.reduce((sum, d) => sum + d.valor, 0));
 	let despesaForm = $state({ id: null as number | null, descricao: '', valor: '' });
@@ -40,41 +42,44 @@
 	}
 	async function salvarDespesa(event: SubmitEvent) {
 		event.preventDefault();
-		let submitButton = event.submitter; // Tenta pegar o submitter
-		if (!submitButton) {
-			// Se submitter for null (ex.: envio por Enter), busca o primeiro botão de submit
-			submitButton = document.querySelector('button[type="submit"]');
-		}
+
 		const descricao = despesaForm.descricao;
 		const valor = parseFloat(despesaForm.valor);
-		if (descricao && valor > 0) {
-			if (despesaForm.id === null) {
-				const dataHoraAtual = new Date().toLocaleString();
-				const resultInsert = await adicionarDespesa({ data: dataHoraAtual, descricao, valor });
-				if (resultInsert.status !== 'success') {
-					toast.error('Erro ao adicionar despesa: ' + resultInsert.message);
-					return;
-				}
-				if (resultInsert.status === 'success') {
-					toast.success('Despesa adicionada com sucesso!');
-				}
-			} else {
-				const dataHoraAtual = new Date().toLocaleString();
-				const resultInsert = await atualizarDespesa(despesaForm.id, {
-					data: dataHoraAtual,
-					descricao,
-					valor
-				});
-				if (resultInsert.status !== 'success') {
-					toast.error('Erro ao adicionar despesa: ' + resultInsert.message);
-					return;
-				} else if (resultInsert.status === 'success') {
-					toast.success('Despesa adicionada com sucesso!');
+
+		if (!descricao || valor <= 0) {
+			toast.error('Preencha todos os campos corretamente!');
+
+			return;
+		}
+
+		botaoGravarDesabilitado = true; // Desabilita o botão de gravação enquanto a operação está em andamento
+
+		const dataHoraAtual = new Date().toISOString();
+		const despesaData = { data: dataHoraAtual, descricao, valor };
+
+		await toast.promise(
+			despesaForm.id === null
+				? adicionarDespesa(despesaData)
+				: atualizarDespesa(despesaForm.id, despesaData),
+			{
+				loading:
+					despesaForm.id === null
+						? 'Adicionando despesa "' + despesaForm.descricao + '"...'
+						: 'Atualizando despesa "' + despesaForm.descricao + '"...',
+				success: () => {
+					isDespesaModalOpen = false;
+					botaoGravarDesabilitado = false; // Reabilita o botão de gravação
+					despesaForm = { id: null, descricao: '', valor: '' }; // Limpa o formulário
+					return despesaForm.id === null
+						? 'Despesa "' + despesaForm.descricao + '" adicionada com sucesso!'
+						: 'Despesa "' + despesaForm.descricao + '" atualizada com sucesso!';
+				},
+				error: (err) => {
+					botaoGravarDesabilitado = false; // Reabilita o botão de gravação em caso de erro
+					return `Erro ao ${despesaForm.id === null ? 'adicionar' : 'atualizar'} despesa: ${err.message}`;
 				}
 			}
-
-			isDespesaModalOpen = false;
-		}
+		);
 	}
 	// Funções para remoção
 	function abrirRemoverDespesa(id: number) {
@@ -84,16 +89,20 @@
 
 	async function confirmarRemoverDespesa() {
 		if (removerDespesaId === null) return; // Garante que removerDespesaId não é null
-		const resultDelete = await deletarDespesa(removerDespesaId);
-		if (resultDelete.status !== 'success') {
-			toast.error('Erro ao remover despesa: ' + resultDelete.message);
-			return;
-		} else if (resultDelete.status === 'success') {
-			toast.success('Despesa removida com sucesso!');
-		}
-
-		isRemoverDespesaModalOpen = false;
-		removerDespesaId = null;
+		botaoGravarDeleteDesabilitado = true; // Desabilita o botão de gravação enquanto a operação está em andamento
+		await toast.promise(deletarDespesa(removerDespesaId), {
+			loading: 'Removendo despesa...',
+			success: () => {
+				botaoGravarDeleteDesabilitado = false; // Reabilita o botão de gravação
+				isRemoverDespesaModalOpen = false;
+				removerDespesaId = null;
+				return 'Despesa removida com sucesso!';
+			},
+			error: (err) => {
+				botaoGravarDeleteDesabilitado = false; // Reabilita o botão de gravação em caso de erro
+				return `Erro ao remover despesa: ${err.message}`;
+			}
+		});
 	}
 
 	function fecharRemoverDespesaModal() {
@@ -180,7 +189,7 @@
 				<Button color="secondary" onclick={() => (isDespesaModalOpen = !isDespesaModalOpen)}
 					>Cancelar</Button
 				>
-				<Button color="primary" type="submit">Salvar</Button>
+				<Button color="primary" type="submit" disabled={botaoGravarDesabilitado}>Salvar</Button>
 			</ModalFooter>
 		</form>
 	</ModalBody>
@@ -194,6 +203,10 @@
 	</ModalBody>
 	<ModalFooter>
 		<Button color="secondary" onclick={fecharRemoverDespesaModal}>Cancelar</Button>
-		<Button color="danger" onclick={confirmarRemoverDespesa}>Remover</Button>
+		<Button
+			color="danger"
+			disabled={botaoGravarDeleteDesabilitado}
+			onclick={confirmarRemoverDespesa}>Remover</Button
+		>
 	</ModalFooter>
 </Modal>

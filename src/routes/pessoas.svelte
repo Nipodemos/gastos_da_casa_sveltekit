@@ -22,6 +22,9 @@
 	let removerPessoaId = $state<number | null>(null);
 	let isRemoverPessoaModalOpen = $state(false);
 	let pessoas = getPessoas(); // Lista de pessoas do store
+	let botaoGravarDesabilitado = $state(true); // Estado para habilitar/desabilitar o botão de gravação
+	let botaoGravarDeleteDesabilitado = $state(false); // Estado para habilitar/desabilitar o botão de gravação
+
 	const totalRenda = $derived(pessoas.reduce((sum, p) => sum + p.salario_liquido, 0));
 	// Valores dos formulários (para binding), agora com id
 
@@ -86,48 +89,63 @@
 		const taxaAlimentacao = parseFloat(pessoaForm.taxaAlimentacao) || 0;
 		const taxaTransporte = parseFloat(pessoaForm.taxaTransporte) || 0;
 		const valeAlimentacao = parseFloat(pessoaForm.valeAlimentacao) || 0;
-		if (nome && salarioBruto >= 0) {
-			if (pessoas.length >= 4 && pessoaForm.id === null) {
-				alert('Limite de 4 pessoas atingido.');
-				return;
-			}
-			const salarioLiquido = calcularSalarioLiquido(
+
+		if (!nome || salarioBruto < 0) {
+			toast.error('Preencha todos os campos corretamente!');
+			return;
+		}
+
+		if (pessoas.length >= 4 && pessoaForm.id === null) {
+			toast.error('Limite de 4 pessoas atingido.');
+			return;
+		}
+
+		botaoGravarDesabilitado = true; // Desabilita o botão de gravação
+
+		const novaPessoa = {
+			nome,
+			salario_bruto: salarioBruto,
+			taxa_inss: taxaInss,
+			taxa_alimentacao: taxaAlimentacao,
+			taxa_transporte: taxaTransporte,
+			vale_alimentacao: valeAlimentacao,
+			salario_liquido: calcularSalarioLiquido(
 				salarioBruto,
 				taxaInss,
 				taxaAlimentacao,
 				taxaTransporte,
 				valeAlimentacao
-			);
-			const novaPessoa = {
-				nome,
-				salario_bruto: salarioBruto,
-				taxa_inss: taxaInss,
-				taxa_alimentacao: taxaAlimentacao,
-				taxa_transporte: taxaTransporte,
-				vale_alimentacao: valeAlimentacao,
-				salario_liquido: salarioLiquido
-			};
-			if (pessoaForm.id === null) {
-				const resultInsert = await adicionarPessoa(novaPessoa);
-				if (resultInsert.status !== 'success') {
-					toast.error('Erro ao adicionar pessoa: ' + resultInsert.message);
-					return;
-				}
-				if (resultInsert.status === 'success') {
-					toast.success('Pessoa adicionada com sucesso!');
-				}
-			} else {
-				const resultInsert = await atualizarPessoa(pessoaForm.id, novaPessoa);
-				if (resultInsert.status !== 'success') {
-					toast.error('Erro ao adicionar pessoa: ' + resultInsert.message);
-					return;
-				} else if (resultInsert.status === 'success') {
-					toast.success('Pessoa adicionada com sucesso!');
+			)
+		};
+
+		await toast.promise(
+			pessoaForm.id === null
+				? adicionarPessoa(novaPessoa)
+				: atualizarPessoa(pessoaForm.id, novaPessoa),
+			{
+				loading: pessoaForm.id === null ? 'Adicionando pessoa...' : 'Atualizando pessoa...',
+				success: () => {
+					isPessoaModalOpen = false;
+					botaoGravarDesabilitado = false; // Reabilita o botão
+					pessoaForm = {
+						id: null,
+						nome: '',
+						salarioBruto: '',
+						taxaInss: '',
+						taxaAlimentacao: '',
+						taxaTransporte: '',
+						valeAlimentacao: ''
+					}; // Limpa o formulário
+					return pessoaForm.id === null
+						? 'Pessoa adicionada com sucesso!'
+						: 'Pessoa atualizada com sucesso!';
+				},
+				error: (err) => {
+					botaoGravarDesabilitado = false; // Reabilita o botão em caso de erro
+					return `Erro ao ${pessoaForm.id === null ? 'adicionar' : 'atualizar'} pessoa: ${err.message}`;
 				}
 			}
-
-			isPessoaModalOpen = false;
-		}
+		);
 	}
 
 	function abrirRemoverPessoa(id: number) {
@@ -136,17 +154,21 @@
 	}
 
 	async function confirmarRemoverPessoa() {
-		if (removerPessoaId === null) return; // Garante que removerPessoaId não é null
-		const resultDelete = await deletarPessoa(removerPessoaId);
-		if (resultDelete.status !== 'success') {
-			toast.error('Erro ao remover pessoa: ' + resultDelete.message);
-			return;
-		} else if (resultDelete.status === 'success') {
-			toast.success('Pessoa removida com sucesso!');
-		}
-
-		isRemoverPessoaModalOpen = false;
-		removerPessoaId = null;
+		if (removerPessoaId === null) return; // Garante que removerDespesaId não é null
+		botaoGravarDeleteDesabilitado = true; // Desabilita o botão de gravação enquanto a operação está em andamento
+		await toast.promise(deletarPessoa(removerPessoaId), {
+			loading: 'Removendo pessoa...',
+			success: () => {
+				botaoGravarDeleteDesabilitado = false; // Reabilita o botão de gravação
+				isRemoverPessoaModalOpen = false;
+				removerPessoaId = null;
+				return 'Pessoa removida com sucesso!';
+			},
+			error: (err) => {
+				botaoGravarDeleteDesabilitado = false; // Reabilita o botão de gravação em caso de erro
+				return `Erro ao remover pessoa: ${err.message}`;
+			}
+		});
 	}
 
 	function fecharRemoverPessoaModal() {
@@ -276,7 +298,7 @@
 				<Button color="secondary" onclick={() => (isPessoaModalOpen = !isPessoaModalOpen)}
 					>Cancelar</Button
 				>
-				<Button color="primary" type="submit">Salvar</Button>
+				<Button color="primary" type="submit" disabled={botaoGravarDesabilitado}>Salvar</Button>
 			</ModalFooter>
 		</form>
 	</ModalBody>
@@ -290,6 +312,8 @@
 	</ModalBody>
 	<ModalFooter>
 		<Button color="secondary" onclick={fecharRemoverPessoaModal}>Cancelar</Button>
-		<Button color="danger" onclick={confirmarRemoverPessoa}>Remover</Button>
+		<Button color="danger" onclick={confirmarRemoverPessoa} disabled={botaoGravarDeleteDesabilitado}
+			>Remover</Button
+		>
 	</ModalFooter>
 </Modal>

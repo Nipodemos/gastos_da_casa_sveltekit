@@ -57,7 +57,7 @@
 		<!-- Seção de Divisão de Despesas (Cards) -->
 		<section id="calculos" class="mb-5">
 			<h2 class="h4 fw-bold mb-3">Divisão das Despesas</h2>
-			<div class="row row-cols-1 row-cols-md-4 g-4">
+			<div class="row row-cols-1 g-4">
 				{#if pessoas.length === 0}
 					<div class="col-12">
 						<div class="card h-100" style="min-height: 150px;">
@@ -68,7 +68,7 @@
 					</div>
 				{:else}
 					{#each divisao as pessoa}
-						<div class="col">
+						<div class="col-md-4">
 							<div class="card h-100">
 								<div class="card-body text-center">
 									<h5 class="card-title">{pessoa.nome}</h5>

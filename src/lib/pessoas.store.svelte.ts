@@ -33,6 +33,7 @@ export async function carregarPessoas(): Promise<OperationResult> {
 export async function adicionarPessoa(pessoa: PessoaInsert): Promise<OperationResult> {
 	const { data, error } = await supabase.from('pessoas').insert(pessoa).select();
 	if (error) {
+		console.error(error);
 		throw new Error(traduzirErro(error.message)); // Rejeita com erro
 	} else if (data && data.length > 0) {
 		pessoas.push(data[0]);
@@ -47,6 +48,7 @@ export async function atualizarPessoa(id: number, updates: PessoaUpdate): Promis
 	updates.updated_at = new Date().toISOString(); // Define a data atual
 	const { data, error } = await supabase.from('pessoas').update(updates).eq('id', id).select();
 	if (error) {
+		console.error(error);
 		throw new Error(traduzirErro(error.message)); // Rejeita com erro
 	} else if (data && data.length > 0) {
 		const index = pessoas.findIndex((p) => p.id === id);
@@ -76,6 +78,8 @@ function traduzirErro(errorMessage: string): string {
 	}
 	if (errorMessage.includes('NetworkError')) {
 		return 'Erro de conexão. Verifique sua internet e tente novamente.';
+	} else if (errorMessage.includes('violates row-level security')) {
+		return 'Você não tem permissão para acessar este recurso.';
 	}
 	return 'Ocorreu um erro inesperado. Tente novamente mais tarde.';
 }

@@ -33,6 +33,7 @@ export async function carregarDespesas(): Promise<OperationResult> {
 export async function adicionarDespesa(despesa: DespesaInsert): Promise<OperationResult> {
 	const { data, error } = await supabase.from('despesas').insert(despesa).select();
 	if (error) {
+		console.error(error);
 		throw new Error(traduzirErro(error.message)); // Rejeita com erro
 	}
 	if (data && data.length > 0) {
@@ -51,6 +52,7 @@ export async function atualizarDespesa(
 	updates.updated_at = new Date().toISOString(); // Define a data atual
 	const { data, error } = await supabase.from('despesas').update(updates).eq('id', id).select();
 	if (error) {
+		console.error(error);
 		throw new Error(traduzirErro(error.message)); // Rejeita com erro
 	}
 	if (data && data.length > 0) {
@@ -79,9 +81,10 @@ export async function deletarDespesa(id: number): Promise<OperationResult> {
 function traduzirErro(errorMessage: string): string {
 	if (errorMessage.includes('duplicate key value')) {
 		return 'Esta despesa já está registrada.';
-	}
-	if (errorMessage.includes('NetworkError')) {
+	} else if (errorMessage.includes('NetworkError')) {
 		return 'Erro de conexão. Verifique sua internet e tente novamente.';
+	} else if (errorMessage.includes('violates row-level security')) {
+		return 'Você não tem permissão para acessar este recurso.';
 	}
 	return 'Ocorreu um erro inesperado. Tente novamente mais tarde.';
 }

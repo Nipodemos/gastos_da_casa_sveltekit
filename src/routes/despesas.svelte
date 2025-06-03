@@ -186,8 +186,10 @@
 				/>
 			</FormGroup>
 			<ModalFooter>
-				<Button color="secondary" onclick={() => (isDespesaModalOpen = !isDespesaModalOpen)}
-					>Cancelar</Button
+				<Button
+					type="button"
+					color="secondary"
+					onclick={() => (isDespesaModalOpen = !isDespesaModalOpen)}>Cancelar</Button
 				>
 				<Button color="primary" type="submit" disabled={botaoGravarDesabilitado}>Salvar</Button>
 			</ModalFooter>

@@ -191,31 +191,29 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#if pessoas.length === 0}
+			{#each pessoas as pessoa}
 				<tr>
-					<td colspan="3" class="text-center text-muted" style="height: 100px;"
-						>Nenhuma pessoa cadastrada</td
-					>
+					<td>{pessoa.nome}</td>
+					<td>R$ {pessoa.salario_liquido.toFixed(2)}</td>
+					<td class="text-end">
+						<Button
+							color="primary"
+							size="sm"
+							class="me-2"
+							onclick={() => abrirEditarPessoa(pessoa.id)}>Editar</Button
+						>
+						<Button color="danger" size="sm" onclick={() => abrirRemoverPessoa(pessoa.id)}
+							>Remover</Button
+						>
+					</td>
 				</tr>
 			{:else}
-				{#each pessoas as pessoa}
-					<tr>
-						<td>{pessoa.nome}</td>
-						<td>R$ {pessoa.salario_liquido.toFixed(2)}</td>
-						<td class="text-end">
-							<Button
-								color="primary"
-								size="sm"
-								class="me-2"
-								onclick={() => abrirEditarPessoa(pessoa.id)}>Editar</Button
-							>
-							<Button color="danger" size="sm" onclick={() => abrirRemoverPessoa(pessoa.id)}
-								>Remover</Button
-							>
-						</td>
-					</tr>
-				{/each}
-			{/if}
+				<tr>
+					<td colspan="3" class="text-center text-muted" style="height: 100px;">
+						Nenhuma pessoa cadastrada
+					</td>
+				</tr>
+			{/each}
 		</tbody>
 	</table>
 </div>

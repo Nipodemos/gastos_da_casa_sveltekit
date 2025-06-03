@@ -17,7 +17,7 @@
 </script>
 
 <Container sm>
-	<Row>
+	<Row style="height: 900px; align-items: center">
 		<Col sm={{ size: 4, offset: 4 }}>
 			<Form>
 				<FormGroup floating label="Email*">

@@ -1,23 +1,25 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Toaster } from 'svelte-french-toast';
+	import { Button } from '@sveltestrap/sveltestrap';
+	import { supabase } from '$lib/supabaseClient';
+	import { goto } from '$app/navigation';
 	import TelaDespesas from './despesas.svelte';
 	import TelaPessoas from './pessoas.svelte';
 
 	import { getPessoas, carregarPessoas } from '$lib/pessoas.store.svelte';
 	import { getDespesas, carregarDespesas } from '$lib/despesas.store.svelte';
 
+	export let data;
+
 	const pessoas = getPessoas();
 	const despesas = getDespesas();
-	// Interfaces para os dados do Supabase
 
 	interface Divisao {
 		nome: string;
 		valorPagar: string;
 		proporcao: string;
 	}
-
-	// Estado reativo com $state
 
 	// Carregar dados do Supabase ao montar o componente
 	onMount(async () => {
@@ -40,6 +42,11 @@
 			};
 		});
 	});
+
+	async function handleLogout() {
+		await supabase.auth.signOut();
+		goto('/login');
+	}
 </script>
 
 <Toaster />
@@ -47,8 +54,17 @@
 <div class="bg-light">
 	<!-- Cabeçalho -->
 	<header class="bg-primary text-white p-4">
-		<div class="container">
-			<h1 class="h3 fw-bold">Divisão de Despesas da Casa</h1>
+		<div class="container d-flex justify-content-between align-items-center">
+			<div>
+				<h1 class="h3 fw-bold mb-0">Divisão de Despesas da Casa</h1>
+				{#if data.session?.user?.email}
+					<small class="opacity-75">Logado como: {data.session.user.email}</small>
+				{/if}
+			</div>
+			<Button color="light" outline size="sm" onclick={handleLogout}>
+				<i class="bi bi-box-arrow-right me-2"></i>
+				Sair
+			</Button>
 		</div>
 	</header>
 

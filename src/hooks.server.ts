@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { type Handle, redirect } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
+
 import { PUBLIC_SUPABASE_URL, PUBLIC_SUPABASE_ANON_KEY } from '$env/static/public';
 
 const supabase: Handle = async ({ event, resolve }) => {
@@ -66,12 +67,12 @@ const authGuard: Handle = async ({ event, resolve }) => {
 	event.locals.session = session;
 	event.locals.user = user;
 
-	if (!event.locals.session && event.url.pathname === '/') {
-		redirect(303, '/login');
+	if (!event.locals.session && event.url.pathname.startsWith('/private')) {
+		redirect(303, '/auth');
 	}
 
-	if (event.locals.session && event.url.pathname === '/login') {
-		redirect(303, '/');
+	if (event.locals.session && event.url.pathname === '/auth') {
+		redirect(303, '/private');
 	}
 
 	return resolve(event);

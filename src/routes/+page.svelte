@@ -10,7 +10,8 @@
 	import { getPessoas, carregarPessoas } from '$lib/pessoas.store.svelte';
 	import { getDespesas, carregarDespesas } from '$lib/despesas.store.svelte';
 
-	export let data;
+	let { data } = $props();
+	let { colors } = $derived(data);
 
 	const pessoas = getPessoas();
 	const despesas = getDespesas();
@@ -52,6 +53,11 @@
 <Toaster />
 
 <div class="bg-light">
+	<ul>
+		{#each colors as color}
+			<li>{color.name}</li>
+		{/each}
+	</ul>
 	<!-- Cabeçalho -->
 	<header class="bg-primary text-white p-4">
 		<div class="container d-flex justify-content-between align-items-center">

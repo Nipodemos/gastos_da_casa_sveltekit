@@ -1,21 +1,25 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { Button, Card, CardBody, CardHeader, Col, Container, Form, FormGroup, Input, Row, Alert } from '@sveltestrap/sveltestrap';
-	import type { ActionData } from './$types';
+	import {
+		Button,
+		Card,
+		CardBody,
+		CardHeader,
+		Col,
+		Container,
+		Form,
+		FormGroup,
+		Input,
+		Row,
+		Alert
+	} from '@sveltestrap/sveltestrap';
+	import type { PageProps } from './$types';
 
-	export let form: ActionData;
+	let { form }: PageProps = $props();
 
 	let loading = $state(false);
 	let email = $state(form?.email ?? '');
 	let password = $state('');
-
-	function handleSubmit() {
-		loading = true;
-		return async ({ update }) => {
-			await update();
-			loading = false;
-		};
-	}
 </script>
 
 <svelte:head>
@@ -39,7 +43,7 @@
 							</Alert>
 						{/if}
 
-						<Form method="POST" action="?/login" use:enhance={handleSubmit}>
+						<Form method="POST">
 							<FormGroup class="mb-3">
 								<label for="email" class="form-label fw-semibold">
 									<i class="bi bi-envelope me-2"></i>Email
@@ -52,7 +56,7 @@
 									bind:value={email}
 									required
 									class="form-control-lg"
-									invalid={form?.error && !email}
+									invalid={form?.error!! && !email ? true : false}
 								/>
 							</FormGroup>
 
@@ -68,7 +72,7 @@
 									bind:value={password}
 									required
 									class="form-control-lg"
-									invalid={form?.error && !password}
+									invalid={form?.error!! && !password ? true : false}
 								/>
 							</FormGroup>
 
@@ -81,7 +85,11 @@
 									class="fw-semibold"
 								>
 									{#if loading}
-										<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+										<span
+											class="spinner-border spinner-border-sm me-2"
+											role="status"
+											aria-hidden="true"
+										></span>
 										Entrando...
 									{:else}
 										<i class="bi bi-box-arrow-in-right me-2"></i>
@@ -107,53 +115,5 @@
 <style>
 	:global(body) {
 		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-	}
-	
-	.card {
-		border-radius: 1rem;
-		overflow: hidden;
-	}
-	
-	.card-header {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-		border: none;
-	}
-	
-	.form-control-lg {
-		border-radius: 0.75rem;
-		border: 2px solid #e9ecef;
-		transition: all 0.3s ease;
-	}
-	
-	.form-control-lg:focus {
-		border-color: #667eea;
-		box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-	}
-	
-	.btn-primary {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		border: none;
-		border-radius: 0.75rem;
-		padding: 0.75rem 1.5rem;
-		transition: all 0.3s ease;
-	}
-	
-	.btn-primary:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-	}
-	
-	.btn-primary:disabled {
-		transform: none;
-		box-shadow: none;
-	}
-	
-	.alert {
-		border-radius: 0.75rem;
-		border: none;
-	}
-	
-	.shadow-lg {
-		box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important;
 	}
 </style>

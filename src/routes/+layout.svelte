@@ -1,4 +1,5 @@
 <script lang="ts">
+	import '../app.css';
 	import { remult, Remult } from 'remult';
 	import { createSubscriber } from 'svelte/reactivity';
 	import type { LayoutProps } from './$types';
@@ -10,9 +11,11 @@
 		// Auth reactivity (remult.user, remult.authenticated(), ...)
 		{
 			let update = () => {};
+
 			let s = createSubscriber((u) => {
 				update = u;
 			});
+
 			remult.subscribeAuth({
 				reportObserved: () => s(),
 				reportChanged: () => update()
@@ -23,9 +26,11 @@
 		{
 			Remult.entityRefInit = (x) => {
 				let update = () => {};
+
 				let s = createSubscriber((u) => {
 					update = u;
 				});
+
 				x.subscribe({
 					reportObserved: () => s(),
 					reportChanged: () => update()
@@ -33,6 +38,7 @@
 			};
 		}
 	}
+
 	initRemultSvelteReactivity();
 </script>
 

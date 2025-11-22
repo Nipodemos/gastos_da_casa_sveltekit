@@ -1,15 +1,15 @@
-import { remult } from 'remult';
-import type { LayoutLoad } from './$types';
+import { remult } from "remult";
+import type { LayoutLoad } from "./$types";
 
-export const load = (async (event) => {
-	// Criar um fetch customizado que sempre inclui credenciais
-	const customFetch = (input: RequestInfo | URL, init?: RequestInit) => {
-		return event.fetch(input, {
-			...init,
-			credentials: 'include' // Força envio de cookies
-		});
-	};
+export const load = ((event) => {
+  // Criar um fetch customizado que sempre inclui credenciais
+  const customFetch = (input: RequestInfo | URL, init?: RequestInit) => {
+    return event.fetch(input, {
+      ...init,
+      credentials: "include", // Força envio de cookies
+    });
+  };
 
-	remult.useFetch(customFetch);
-	return {};
+  remult.useFetch(customFetch);
+  return { logado: event.data.logado };
 }) satisfies LayoutLoad;

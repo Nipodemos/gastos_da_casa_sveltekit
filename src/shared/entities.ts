@@ -14,9 +14,11 @@ import type { ClassType } from 'remult';
 import { Despesa } from './despesa.model';
 import { Pessoa } from './pessoa.model';
 
+import { DespesaFixa } from './despesa-fixa.model';
+
 // 📝 Array centralizado de todas as entidades do sistema
 // Adicione novas entidades aqui e elas serão automaticamente registradas
-export const entities: ClassType<any>[] = [Despesa, Pessoa];
+export const entities: ClassType<any>[] = [Despesa, Pessoa, DespesaFixa];
 
 // Função helper para obter a lista de entidades (opcional, para melhor tipagem)
 export function getEntities() {

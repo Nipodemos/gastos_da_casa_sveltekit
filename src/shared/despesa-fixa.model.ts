@@ -1,9 +1,9 @@
 import { Entity, Fields, Validators } from 'remult';
 
-@Entity<Despesa>('despesas', {
+@Entity<DespesaFixa>('despesasFixas', {
 	allowApiCrud: true
 })
-export class Despesa {
+export class DespesaFixa {
 	@Fields.id()
 	id: string = '';
 
@@ -13,17 +13,14 @@ export class Despesa {
 	@Fields.number({ required: true, validate: Validators.min(0.01) })
 	valor: number = 0;
 
-	@Fields.dateOnly({ required: true })
-	data: Date = new Date();
+	@Fields.integer({ required: true, validate: [Validators.min(1), Validators.max(31)] })
+	diaVencimento: number = 1;
 
 	@Fields.boolean()
-	paga: boolean = false;
+	ativa: boolean = true;
 
-	@Fields.string()
-	despesaFixaId: string = '';
-
-	@Fields.boolean()
-	excluida: boolean = false;
+    @Fields.dateOnly()
+    inicio: Date = new Date();
 
 	@Fields.createdAt()
 	createdAt?: Date;

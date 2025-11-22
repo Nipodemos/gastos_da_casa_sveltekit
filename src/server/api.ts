@@ -6,6 +6,7 @@ import { BetterSqlite3DataProvider } from 'remult/remult-better-sqlite3';
 
 export const api = remultApi({
 	admin: true,
+  controllers: [DespesasController],
 	entities: entities,
 	controllers: [],
 	dataProvider: new SqlDatabase(new BetterSqlite3DataProvider(new Database('./mydb.sqlite')))

@@ -4,7 +4,7 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
-		"dev": "vite dev",
+		"dev": "npm run gen:env && vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -13,7 +13,8 @@
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run"
+		"test": "npm run test:unit -- --run",
+		"gen:env": "gen-env-template .env .env.example"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
@@ -31,6 +32,7 @@
 		"eslint": "^9.18.0",
 		"eslint-config-prettier": "^10.0.1",
 		"eslint-plugin-svelte": "^3.0.0",
+		"gen-env-template": "^2.1.1",
 		"globals": "^16.0.0",
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.3",
@@ -45,6 +47,7 @@
 		"vitest": "^3.2.3"
 	},
 	"dependencies": {
+		"@libsql/client": "^0.15.15",
 		"better-sqlite3": "^12.2.0",
 		"jsonwebtoken": "^9.0.2"
 	}

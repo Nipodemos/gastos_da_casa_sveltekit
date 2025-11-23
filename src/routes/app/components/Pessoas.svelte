@@ -243,22 +243,25 @@
 						<div class="space-y-2 text-sm">
 							<div class="flex justify-between">
 								<span class="text-surface-600-400">Salário Líquido:</span>
-								<span class="font-bold text-success-500"
+								<span class="font-bold text-success-700-300"
 									>{formatCurrency(pessoa.salarioLiquido)}</span
 								>
 							</div>
 							<div class="flex justify-between">
 								<span class="text-surface-600-400">Valor a pagar:</span>
-								<span class="font-bold text-error-500">{formatCurrency(pessoa.valorAPagar)}</span>
+								<span class="font-bold text-error-700-300"
+									>{formatCurrency(pessoa.valorAPagar)}</span
+								>
 							</div>
 							<div class="flex justify-between">
 								<span class="text-surface-600-400">Sobra do Salário:</span>
-								<span class="font-bold text-success-500">{formatCurrency(pessoa.sobraSalario)}</span
+								<span class="font-bold text-success-700-300"
+									>{formatCurrency(pessoa.sobraSalario)}</span
 								>
 							</div>
 							<div class="flex items-center justify-between">
 								<span class="text-surface-600-400">Contribuição (% Renda):</span>
-								<span class="badge preset-filled-surface-500">
+								<span class="badge preset-filled-surface-700-300">
 									{formatPercent(pessoa.porcentagemContribuicao)}
 								</span>
 							</div>
@@ -266,7 +269,7 @@
 					</div>
 				{:else}
 					<div
-						class="card p-4 text-center text-surface-500 preset-filled-surface-200-800 border border-surface-200-800"
+						class="card p-4 text-center text-surface-700-300 preset-filled-surface-200-800 border border-surface-200-800"
 					>
 						Nenhuma pessoa cadastrada.
 					</div>
@@ -317,7 +320,7 @@
 						max="1"
 						bind:value={pessoaForm.porcentagemTaxaAlimentacao}
 					/>
-					<span class="text-xs text-surface-500">Ex: 0.1 para 10%</span>
+					<span class="text-xs text-surface-700-300">Ex: 0.1 para 10%</span>
 				</label>
 				<label class="label">
 					<span>Taxa Passagem (%)</span>
@@ -328,7 +331,7 @@
 						max="1"
 						bind:value={pessoaForm.porcentagemTaxaPassagem}
 					/>
-					<span class="text-xs text-surface-500">Ex: 0.06 para 6%</span>
+					<span class="text-xs text-surface-700-300">Ex: 0.06 para 6%</span>
 				</label>
 				<label class="label">
 					<span>Valor Ticket Alimentação (R$)</span>
@@ -346,10 +349,10 @@
 				<div class="flex justify-end gap-2">
 					<button
 						type="button"
-						class="btn preset-outlined-surface-500"
+						class="btn preset-outlined-surface-700-300"
 						onclick={() => (showPessoaModal = false)}>Cancelar</button
 					>
-					<button type="submit" class="btn preset-filled-primary-500">Salvar</button>
+					<button type="submit" class="btn preset-filled-primary-700-300">Salvar</button>
 				</div>
 			</form>
 		</div>

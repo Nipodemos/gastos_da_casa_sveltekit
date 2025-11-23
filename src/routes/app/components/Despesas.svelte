@@ -1,0 +1,290 @@
+<script lang="ts">
+	import { remult } from 'remult';
+	import { Despesa } from '../../../shared/despesa.model';
+	import { DespesasController } from '../../../server/despesas.controller';
+
+	/**
+	 * Props do componente Despesas.
+	 */
+	interface Props {
+		selectedDate: string;
+		totalDespesas: number;
+	}
+	let { selectedDate, totalDespesas = $bindable(0) } = $props();
+
+	// --- Estado ---
+
+	/** Lista de despesas do mês selecionado */
+	let despesas: Despesa[] = $state([]);
+
+	/** Indica se os dados estão sendo carregados */
+	let loading: boolean = $state(false);
+
+	// --- Estado dos Modais ---
+
+	/** Controla a visibilidade do modal de despesa */
+	let showDespesaModal: boolean = $state(false);
+
+	/** A despesa sendo editada, ou null se for uma nova despesa */
+	let editingDespesa: Despesa | null = $state(null);
+
+	/** O formulário da despesa */
+	let despesaForm: { descricao: string; valor: number; data: string; paga: boolean } = $state({
+		descricao: '',
+		valor: 0,
+		data: new Date().toISOString().slice(0, 10),
+		paga: false
+	});
+
+	// --- Efeitos ---
+
+	/**
+	 * Efeito que recarrega os dados sempre que a data selecionada muda.
+	 */
+	$effect(() => {
+		loadData(selectedDate);
+	});
+
+	/**
+	 * Efeito que recalcula o total de despesas sempre que a lista de despesas muda.
+	 * Atualiza a prop `totalDespesas` para que o componente pai tenha acesso ao valor.
+	 */
+	$effect(() => {
+		totalDespesas = despesas.reduce((acc, d) => acc + d.valor, 0);
+	});
+
+	// --- Carregamento de Dados ---
+
+	/**
+	 * Carrega as despesas para o mês e ano especificados.
+	 * Também garante que as despesas fixas sejam geradas para o mês.
+	 * @param {string} dateStr - A data no formato 'YYYY-MM'.
+	 */
+	async function loadData(dateStr: string) {
+		loading = true;
+		try {
+			const [year, month] = dateStr.split('-').map(Number);
+
+			// Garante que as despesas fixas sejam geradas para este mês
+			await DespesasController.garantirDespesasFixas(month, year);
+
+			const startOfMonth = new Date(year, month - 1, 1);
+			const endOfMonth = new Date(year, month, 0);
+			// Ajusta o final do mês para cobrir o dia todo
+			endOfMonth.setHours(23, 59, 59, 999);
+
+			// Busca as despesas no banco de dados
+			despesas = await remult.repo(Despesa).find({
+				where: {
+					data: { $gte: startOfMonth, $lte: endOfMonth },
+					excluida: false
+				},
+				orderBy: { data: 'asc' }
+			});
+		} catch (error) {
+			console.error('Erro ao carregar despesas:', error);
+			alert('Erro ao carregar dados.');
+		} finally {
+			loading = false;
+		}
+	}
+
+	// --- Ações ---
+
+	/**
+	 * Abre o modal para adicionar uma nova despesa.
+	 * Define a data padrão para o primeiro dia do mês selecionado (ou hoje se for o mês atual).
+	 */
+	function openAddDespesa() {
+		editingDespesa = null;
+		despesaForm = {
+			descricao: '',
+			valor: 0,
+			data: new Date().toISOString().slice(0, 10), // Hoje
+			paga: false
+		};
+		// Se estiver adicionando em um mês específico, define o padrão para o dia 1 desse mês
+		const [year, month] = selectedDate.split('-').map(Number);
+		const today = new Date();
+		if (today.getMonth() + 1 !== month || today.getFullYear() !== year) {
+			despesaForm.data = `${year}-${String(month).padStart(2, '0')}-01`;
+		}
+
+		showDespesaModal = true;
+	}
+
+	/**
+	 * Abre o modal para editar uma despesa existente.
+	 * @param {Despesa} despesa - A despesa a ser editada.
+	 */
+	function openEditDespesa(despesa: Despesa) {
+		editingDespesa = despesa;
+		despesaForm = {
+			descricao: despesa.descricao,
+			valor: despesa.valor,
+			data: new Date(despesa.data).toISOString().slice(0, 10),
+			paga: despesa.paga
+		};
+		showDespesaModal = true;
+	}
+
+	/**
+	 * Salva a despesa (nova ou editada) no banco de dados.
+	 */
+	async function saveDespesa() {
+		try {
+			const repo = remult.repo(Despesa);
+			// Cria o objeto Date corrigindo a questão do fuso horário (simplificado)
+			const [y, m, d] = despesaForm.data.split('-').map(Number);
+			const dateObj = new Date(y, m - 1, d);
+
+			if (editingDespesa) {
+				await repo.update(editingDespesa.id, {
+					...despesaForm,
+					data: dateObj
+				});
+			} else {
+				await repo.insert({
+					...despesaForm,
+					data: dateObj,
+					excluida: false
+				});
+			}
+			showDespesaModal = false;
+			await loadData(selectedDate);
+		} catch (error) {
+			console.error('Erro ao salvar despesa:', error);
+			alert('Erro ao salvar despesa.');
+		}
+	}
+
+	/**
+	 * Exclui uma despesa após confirmação.
+	 * @param {Despesa} despesa - A despesa a ser excluída.
+	 */
+	async function deleteDespesa(despesa: Despesa) {
+		if (!confirm('Tem certeza que deseja excluir esta despesa?')) return;
+		try {
+			await remult.repo(Despesa).delete(despesa.id);
+			await loadData(selectedDate);
+		} catch (error) {
+			console.error('Erro ao excluir despesa:', error);
+			alert('Erro ao excluir despesa.');
+		}
+	}
+
+	/**
+	 * Formata um valor numérico para moeda BRL.
+	 * @param {number} value - O valor a ser formatado.
+	 * @returns {string} O valor formatado (ex: R$ 1.234,56).
+	 */
+	function formatCurrency(value: number): string {
+		return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+	}
+</script>
+
+<div class="space-y-4 lg:col-span-2">
+	<div class="space-y-4 card border preset-outlined-surface-200-800 border-surface-200-800 p-4">
+		<div class="flex items-center justify-between">
+			<h3 class="h3">Despesas do Mês</h3>
+			<button class="btn preset-filled-primary-200-800" onclick={openAddDespesa}>
+				<i class="fa-solid fa-plus mr-2"></i> Adicionar Despesa
+			</button>
+		</div>
+
+		<div class="table-container overflow-hidden rounded-container">
+			<table class="table-hover table">
+				<thead class="bg-surface-200-800">
+					<tr>
+						<th>Descrição</th>
+						<th>Data</th>
+						<th class="text-right">Valor</th>
+						<th class="text-right">Ações</th>
+					</tr>
+				</thead>
+				<tbody>
+					{#if loading}
+						<tr>
+							<td colspan="4" class="p-4 text-center">Carregando...</td>
+						</tr>
+					{:else}
+						{#each despesas as despesa}
+							<tr>
+								<td>{despesa.descricao}</td>
+								<td>{new Date(despesa.data).toLocaleDateString('pt-BR')}</td>
+								<td class="text-right font-bold text-error-500">
+									- {formatCurrency(despesa.valor)}
+								</td>
+								<td class="space-x-2 text-right">
+									<button
+										class="btn-icon btn-icon-sm preset-outlined-primary-200-800"
+										title="Editar"
+										aria-label="Editar"
+										onclick={() => openEditDespesa(despesa)}
+									>
+										<i class="fa-solid fa-pen"></i>
+									</button>
+									<button
+										class="btn-icon btn-icon-sm preset-outlined-error-200-800"
+										title="Excluir"
+										aria-label="Excluir"
+										onclick={() => deleteDespesa(despesa)}
+									>
+										<i class="fa-solid fa-trash"></i>
+									</button>
+								</td>
+							</tr>
+						{:else}
+							<tr>
+								<td colspan="4" class="text-center p-4 text-surface-500">
+									Nenhuma despesa encontrada para este mês.
+								</td>
+							</tr>
+						{/each}
+					{/if}
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+<!-- Despesa Modal -->
+{#if showDespesaModal}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+		<div class="w-full max-w-md space-y-4 card preset-filled-surface-100-900 p-6">
+			<h3 class="h3">{editingDespesa ? 'Editar Despesa' : 'Nova Despesa'}</h3>
+			<form
+				class="space-y-4"
+				onsubmit={(e) => {
+					e.preventDefault();
+					saveDespesa();
+				}}
+			>
+				<label class="label">
+					<span>Descrição</span>
+					<input class="input" type="text" bind:value={despesaForm.descricao} required />
+				</label>
+				<label class="label">
+					<span>Valor (R$)</span>
+					<input class="input" type="number" step="0.01" bind:value={despesaForm.valor} required />
+				</label>
+				<label class="label">
+					<span>Data</span>
+					<input class="input" type="date" bind:value={despesaForm.data} required />
+				</label>
+				<label class="flex items-center space-x-2">
+					<input class="checkbox" type="checkbox" bind:checked={despesaForm.paga} />
+					<span>Paga</span>
+				</label>
+				<div class="flex justify-end gap-2">
+					<button
+						type="button"
+						class="btn preset-outlined-surface-500"
+						onclick={() => (showDespesaModal = false)}>Cancelar</button
+					>
+					<button type="submit" class="btn preset-filled-primary-500">Salvar</button>
+				</div>
+			</form>
+		</div>
+	</div>
+{/if}

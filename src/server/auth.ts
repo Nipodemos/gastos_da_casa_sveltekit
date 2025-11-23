@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 import { AUTH_SECRET } from '$env/static/private';
-import { repo } from 'remult';
 
 interface DadosJWT {
 	logado: boolean;

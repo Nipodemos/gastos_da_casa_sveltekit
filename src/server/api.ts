@@ -1,18 +1,24 @@
 import { remultApi } from "remult/remult-sveltekit";
 import { SqlDatabase, type UserInfo } from "remult";
-import Database from "better-sqlite3";
-import { BetterSqlite3DataProvider } from "remult/remult-better-sqlite3";
+import { TURSO_DATABASE_URL, TURSO_AUTH_TOKEN } from '$env/static/private';
 import { entities } from "$shared/entities";
 
 import { DespesasController } from "./despesas.controller";
+import { TursoDataProvider } from 'remult/remult-turso'
+import { createClient } from '@libsql/client'
 
 export const api = remultApi({
   admin: true,
   controllers: [DespesasController],
   entities: entities,
   dataProvider: new SqlDatabase(
-    new BetterSqlite3DataProvider(new Database("./mydb.sqlite"))
-  ),
+      new TursoDataProvider(
+        createClient({
+          url: TURSO_DATABASE_URL,
+          authToken: TURSO_AUTH_TOKEN,
+        }),
+      ),
+    ),
 
   getUser: async (event): Promise<UserInfo | undefined> => {
     if (!event.locals.logado) {
@@ -23,7 +29,7 @@ export const api = remultApi({
     return {
       id: '1',
       name: "Administrador",
-      roles: ["administrador"],
+      roles: ["admin"],
     };
   },
 });

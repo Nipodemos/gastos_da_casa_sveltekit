@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { remult } from 'remult';
 	import { Despesa } from '../../../shared/despesa.model';
+	import { Progress } from '@skeletonlabs/skeleton-svelte';
 	import { DespesasController } from '../../../server/despesas.controller';
 
 	/**
@@ -198,26 +199,32 @@
 					<tr>
 						<th>Descrição</th>
 						<th>Data</th>
-						<th class="text-right">Valor</th>
-						<th class="text-right">Ações</th>
+						<th class="">Valor</th>
+						<th class="">Ações</th>
 					</tr>
 				</thead>
-				<tbody>
+				<tbody class="[&>tr]:hover:preset-tonal-primary-200-800">
 					{#if loading}
-						<tr>
-							<td colspan="4" class="p-4 text-center">Carregando...</td>
+						<tr class="h-5 bg-surface-200-800">
+							<td colspan="4" class="h-5 p-4 text-center">
+								<Progress value={null}>
+									<Progress.Track>
+										<Progress.Range />
+									</Progress.Track>
+								</Progress>
+							</td>
 						</tr>
 					{:else}
 						{#each despesas as despesa}
-							<tr>
+							<tr class="bg-surface-200-800">
 								<td>{despesa.descricao}</td>
 								<td>{new Date(despesa.data).toLocaleDateString('pt-BR')}</td>
-								<td class="text-right font-bold text-error-500">
+								<td class=" font-bold text-error-500">
 									- {formatCurrency(despesa.valor)}
 								</td>
-								<td class="space-x-2 text-right">
+								<td class="space-x-2">
 									<button
-										class="btn-icon btn-icon-sm preset-outlined-primary-200-800"
+										class="btn-icon btn-icon-sm preset-filled-primary-200-800"
 										title="Editar"
 										aria-label="Editar"
 										onclick={() => openEditDespesa(despesa)}
@@ -225,7 +232,7 @@
 										<i class="fa-solid fa-pen"></i>
 									</button>
 									<button
-										class="btn-icon btn-icon-sm preset-outlined-error-200-800"
+										class="btn-icon btn-icon-sm preset-filled-error-200-800"
 										title="Excluir"
 										aria-label="Excluir"
 										onclick={() => deleteDespesa(despesa)}

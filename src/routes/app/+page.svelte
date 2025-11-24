@@ -28,6 +28,23 @@
 	 */
 	let averageContribution: number = $state(0);
 
+	/**
+	 * Informações detalhadas das pessoas e seus cálculos.
+	 * Obtido do componente Pessoas via bind.
+	 */
+	let pessoasInfo: any[] = $state([]);
+
+	/**
+	 * Receita total da casa.
+	 * Obtido do componente Pessoas via bind.
+	 */
+	let receitaTotal: number = $state(0);
+
+	// --- Estado UI ---
+
+	let shareButtonText = $state('Compartilhar');
+	let shareButtonClass = $state('preset-filled-primary-200-800');
+
 	// --- Helpers ---
 
 	/**
@@ -68,9 +85,54 @@
 	 * @returns {string} O valor formatado.
 	 */
 	function formatPercent(value: number): string {
-		return new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2 }).format(
-			value
-		);
+		return new Intl.NumberFormat('pt-BR', {
+			style: 'percent',
+			minimumFractionDigits: 2
+		}).format(value);
+	}
+
+	/**
+	 * Gera o texto de resumo e copia para a área de transferência.
+	 */
+	async function handleShare() {
+		const [year, month] = selectedDate.split('-');
+		const dateObj = new Date(Number(year), Number(month) - 1);
+		const monthName = dateObj.toLocaleString('pt-BR', { month: 'long' });
+		const header = `*Resumo de Despesas da Casa - ${monthName}/${year}*`;
+
+		let body = '';
+		pessoasInfo.forEach((p) => {
+			// Replace non-breaking space with normal space if needed, but formatCurrency usually returns &nbsp; sometimes?
+			// Intl.NumberFormat usually returns standard spaces or nbsp.
+			// Let's just use the value as is.
+			body += `*${p.nome}*: ${formatCurrency(p.valorAPagar)}\n`;
+		});
+
+		const footer = `
+*Despesas da Casa*: ${formatCurrency(totalDespesas)}
+
+*Receita da Casa (Total Pessoas)*: ${formatCurrency(receitaTotal)}
+
+*Contribuição sobre Renda*: ${formatPercent(averageContribution)}`;
+
+		const textToCopy = `${header}\n\n${body}${footer}`;
+
+		try {
+			await navigator.clipboard.writeText(textToCopy);
+
+			const originalClass = 'preset-filled-primary-200-800';
+
+			shareButtonText = 'Copiado!';
+			shareButtonClass = 'preset-filled-success-500';
+
+			setTimeout(() => {
+				shareButtonText = 'Compartilhar';
+				shareButtonClass = originalClass;
+			}, 1500);
+		} catch (err) {
+			console.error('Failed to copy: ', err);
+			alert('Falha ao copiar para a área de transferência.');
+		}
 	}
 </script>
 
@@ -88,19 +150,28 @@
 			>
 				<i class="fa-solid fa-calendar-check mr-2"></i> Despesas Fixas
 			</button>
-			<button class="btn preset-filled-primary-200-800">
-				<i class="fa-solid fa-share-nodes mr-2"></i> Compartilhar
+			<button class="btn {shareButtonClass}" onclick={handleShare}>
+				{#if shareButtonText === 'Compartilhar'}
+					<i class="fa-solid fa-share-nodes mr-2"></i>
+				{:else}
+					<i class="fa-solid fa-check mr-2"></i>
+				{/if}
+				{shareButtonText}
 			</button>
 		</div>
 	</header>
 
 	<!-- Summary Cards -->
 	<section class="grid grid-cols-1 gap-4 md:grid-cols-2">
-		<div class="space-y-2 card preset-outlined-surface-200-800 border-l-4 border-primary-500 p-6">
+		<div
+			class="space-y-2 card preset-outlined-surface-200-800 border-l-4 border-primary-500 p-6"
+		>
 			<h3 class="h3">Total de Despesas</h3>
 			<p class="h1 text-primary-500">{formatCurrency(totalDespesas)}</p>
 		</div>
-		<div class="space-y-2 card preset-outlined-surface-200-800 border-l-4 border-secondary-500 p-6">
+		<div
+			class="space-y-2 card preset-outlined-surface-200-800 border-l-4 border-secondary-500 p-6"
+		>
 			<h3 class="h3">Proporção de Contribuição</h3>
 			<p class="h1 text-secondary-500">
 				{formatPercent(averageContribution)}
@@ -139,6 +210,6 @@
 		<Despesas {selectedDate} bind:totalDespesas />
 
 		<!-- Right Column: People & Contribution (Takes up 1/3 on large screens) -->
-		<Pessoas {totalDespesas} bind:averageContribution />
+		<Pessoas {totalDespesas} bind:averageContribution bind:pessoasInfo bind:receitaTotal />
 	</div>
 </div>

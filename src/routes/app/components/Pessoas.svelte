@@ -9,7 +9,12 @@
 	 * totalDespesas: O valor total das despesas (input do pai).
 	 * averageContribution: A média de contribuição (bindable).
 	 */
-	let { totalDespesas, averageContribution = $bindable(0) } = $props();
+	let {
+		totalDespesas,
+		averageContribution = $bindable(0),
+		pessoasInfo = $bindable([]),
+		receitaTotal = $bindable(0)
+	} = $props();
 
 	// --- Estado ---
 
@@ -94,6 +99,8 @@
 				? pessoasCalculadas.reduce((acc, p) => acc + p.porcentagemContribuicao, 0) /
 					pessoasCalculadas.length
 				: 0;
+		pessoasInfo = pessoasCalculadas;
+		receitaTotal = totalReceita;
 	});
 
 	// --- Carregamento de Dados ---

@@ -30,7 +30,9 @@
 		descricao: '',
 		valor: 0,
 		diaVencimento: 1,
-		inicio: new Date().toISOString().slice(0, 10),
+		inicio: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+			.toISOString()
+			.slice(0, 7),
 		ativa: true
 	});
 
@@ -69,11 +71,12 @@
 	 */
 	function openAdd() {
 		editingDespesaFixa = null;
+		const today = new Date();
 		form = {
 			descricao: '',
 			valor: 0,
 			diaVencimento: 1,
-			inicio: new Date().toISOString().slice(0, 10),
+			inicio: new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 7),
 			ativa: true
 		};
 		showModal = true;
@@ -88,8 +91,8 @@
 		form = {
 			descricao: despesaFixa.descricao,
 			valor: despesaFixa.valor,
-			diaVencimento: despesaFixa.diaVencimento,
-			inicio: new Date(despesaFixa.inicio).toISOString().slice(0, 10),
+			diaVencimento: 1,
+			inicio: new Date(despesaFixa.inicio).toISOString().slice(0, 7),
 			ativa: despesaFixa.ativa
 		};
 		showModal = true;
@@ -102,17 +105,20 @@
 		try {
 			const repo = remult.repo(DespesaFixa);
 			// Cria o objeto Date corrigindo a questão do fuso horário
-			const [y, m, d] = form.inicio.split('-').map(Number);
-			const dateObj = new Date(y, m - 1, d);
+			const [y, m] = form.inicio.split('-').map(Number);
+			// Força o dia 1 conforme solicitado
+			const dateObj = new Date(y, m - 1, 1);
 
 			if (editingDespesaFixa) {
 				await repo.update(editingDespesaFixa.id, {
 					...form,
+					diaVencimento: 1,
 					inicio: dateObj
 				});
 			} else {
 				await repo.insert({
 					...form,
+					diaVencimento: 1,
 					inicio: dateObj
 				});
 			}
@@ -185,7 +191,6 @@
 					<tr>
 						<th>Descrição</th>
 						<th>Valor</th>
-						<th>Dia Vencimento</th>
 						<th>Início</th>
 						<th>Status</th>
 						<th>Ações</th>
@@ -194,7 +199,7 @@
 				<tbody class="[&>tr]:hover:preset-tonal-primary-200-800">
 					{#if loading}
 						<tr class="h-5 bg-surface-200-800">
-							<td colspan="6" class="h-5 p-4 text-center">
+							<td colspan="5" class="h-5 p-4 text-center">
 								<Progress value={null}>
 									<Progress.Track>
 										<Progress.Range />
@@ -209,7 +214,6 @@
 								<td class="font-bold text-error-500">
 									{formatCurrency(despesaFixa.valor)}
 								</td>
-								<td>Dia {despesaFixa.diaVencimento}</td>
 								<td>{new Date(despesaFixa.inicio).toLocaleDateString('pt-BR')}</td>
 								<td>
 									{#if despesaFixa.ativa}
@@ -227,7 +231,11 @@
 										aria-label={despesaFixa.ativa ? 'Desativar' : 'Ativar'}
 										onclick={() => toggleAtiva(despesaFixa)}
 									>
-										<i class="fa-solid fa-{despesaFixa.ativa ? 'pause' : 'play'}"></i>
+										<i
+											class="fa-solid fa-{despesaFixa.ativa
+												? 'pause'
+												: 'play'}"
+										></i>
 									</button>
 									<button
 										class="btn-icon btn-icon-sm preset-filled-primary-200-800"
@@ -249,7 +257,7 @@
 							</tr>
 						{:else}
 							<tr>
-								<td colspan="6" class="text-center p-4 text-surface-500">
+								<td colspan="5" class="text-center p-4 text-surface-500">
 									Nenhuma despesa fixa cadastrada.
 								</td>
 							</tr>
@@ -279,22 +287,17 @@
 				</label>
 				<label class="label">
 					<span>Valor (R$)</span>
-					<input class="input" type="number" step="0.01" bind:value={form.valor} required />
-				</label>
-				<label class="label">
-					<span>Dia do Vencimento (1-31)</span>
 					<input
 						class="input"
 						type="number"
-						min="1"
-						max="31"
-						bind:value={form.diaVencimento}
+						step="0.01"
+						bind:value={form.valor}
 						required
 					/>
 				</label>
 				<label class="label">
 					<span>Data de Início</span>
-					<input class="input" type="date" bind:value={form.inicio} required />
+					<input class="input" type="month" bind:value={form.inicio} required />
 				</label>
 				<label class="flex items-center space-x-2">
 					<input class="checkbox" type="checkbox" bind:checked={form.ativa} />

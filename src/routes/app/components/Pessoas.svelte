@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { remult } from 'remult';
 	import { Pessoa } from '../../../shared/pessoa.model';
+	import { calculateInssValue } from '$lib/utils/inss';
+	import { Accordion } from '@skeletonlabs/skeleton-svelte';
 
 	/**
 	 * Props do componente Pessoas.
@@ -57,9 +59,13 @@
 		Pessoa & { porcentagemContribuicao: number; valorAPagar: number; sobraSalario: number }
 	> = $derived(
 		pessoas.map((p) => {
-			const porcentagemContribuicao = totalReceita > 0 ? p.salarioLiquido / totalReceita : 0;
-			const valorAPagar = totalDespesas * porcentagemContribuicao;
+			// Proporção da renda total (para calcular quanto pagar)
+			const proporcaoReceita = totalReceita > 0 ? p.salarioLiquido / totalReceita : 0;
+			const valorAPagar = totalDespesas * proporcaoReceita;
 			const sobraSalario = p.salarioLiquido - valorAPagar;
+			// Porcentagem de contribuição: quanto do salário vai para despesas
+			const porcentagemContribuicao =
+				p.salarioLiquido > 0 ? valorAPagar / p.salarioLiquido : 0;
 
 			return {
 				...p,
@@ -195,9 +201,10 @@
 	 * @returns {string} O valor formatado (ex: 10,00%).
 	 */
 	function formatPercent(value: number): string {
-		return new Intl.NumberFormat('pt-BR', { style: 'percent', minimumFractionDigits: 2 }).format(
-			value
-		);
+		return new Intl.NumberFormat('pt-BR', {
+			style: 'percent',
+			minimumFractionDigits: 2
+		}).format(value);
 	}
 </script>
 
@@ -213,67 +220,154 @@
 		<div class="space-y-4">
 			{#if loading}
 				<div class="p-4 text-center">Carregando...</div>
+			{:else if pessoasCalculadas.length === 0}
+				<div class="p-4 text-center">Nenhuma pessoa cadastrada.</div>
 			{:else}
-				{#each pessoasCalculadas as pessoa}
-					<div
-						class="space-y-4 card border border-surface-200-800 preset-filled-surface-200-800 p-4"
-					>
-						<div class="flex items-center justify-between border-b border-surface-200-800 pb-2">
-							<h4 class="h4 font-bold">{pessoa.nome}</h4>
-							<div class="space-x-1">
-								<button
-									class="btn-icon btn-icon-sm preset-outlined-primary-200-800"
-									title="Editar"
-									aria-label="Editar"
-									onclick={() => openEditPessoa(pessoa)}
+				<Accordion multiple class="space-y-4">
+					{#each pessoasCalculadas as pessoa}
+						<Accordion.Item value={pessoa.id}>
+							<div
+								class="space-y-4 card border border-surface-200-800 preset-filled-surface-200-800 p-4"
+							>
+								<div
+									class="flex items-center justify-between border-b border-surface-200-800 pb-2"
 								>
-									<i class="fa-solid fa-pen"></i>
-								</button>
-								<button
-									class="btn-icon btn-icon-sm preset-outlined-error-200-800"
-									title="Excluir"
-									aria-label="Excluir"
-									onclick={() => deletePessoa(pessoa)}
-								>
-									<i class="fa-solid fa-trash"></i>
-								</button>
-							</div>
-						</div>
+									<h4 class="h4 font-bold">{pessoa.nome}</h4>
+									<div class="flex gap-2">
+										<Accordion.ItemTrigger
+											class="group btn-icon btn-icon-sm preset-filled-surface-500"
+											title="Ver Detalhes"
+											aria-label="Detalhes"
+										>
+											<i
+												class="fa-solid fa-chevron-down transition-transform duration-200 group-data-[state=open]:rotate-180"
+											></i>
+										</Accordion.ItemTrigger>
+										<button
+											class="btn-icon btn-icon-sm preset-filled-primary-500"
+											title="Editar"
+											aria-label="Editar"
+											onclick={() => openEditPessoa(pessoa)}
+										>
+											<i class="fa-solid fa-pen"></i>
+										</button>
+										<button
+											class="btn-icon btn-icon-sm preset-filled-error-500"
+											title="Excluir"
+											aria-label="Excluir"
+											onclick={() => deletePessoa(pessoa)}
+										>
+											<i class="fa-solid fa-trash"></i>
+										</button>
+									</div>
+								</div>
 
-						<div class="space-y-2 text-sm">
-							<div class="flex justify-between">
-								<span class="text-surface-600-400">Salário Líquido:</span>
-								<span class="font-bold text-success-700-300"
-									>{formatCurrency(pessoa.salarioLiquido)}</span
-								>
+								<div class="space-y-2 text-sm">
+									<div class="flex justify-between">
+										<span class="text-surface-800-200">Salário Líquido:</span>
+										<span class="font-bold text-success-700-300">
+											{formatCurrency(pessoa.salarioLiquido)}
+										</span>
+									</div>
+									<div class="flex justify-between">
+										<span class="text-surface-800-200">Valor a pagar:</span>
+										<span class="font-bold text-error-700-300">
+											{formatCurrency(pessoa.valorAPagar)}
+										</span>
+									</div>
+									<div class="flex justify-between">
+										<span class="text-surface-800-200">Sobra do Salário:</span>
+										<span class="font-bold text-success-700-300">
+											{formatCurrency(pessoa.sobraSalario)}
+										</span>
+									</div>
+									<div class="flex items-center justify-between">
+										<span class="text-surface-800-200"
+											>Contribuição (% Renda):</span
+										>
+										<span class="badge preset-filled-surface-700-300">
+											{formatPercent(pessoa.porcentagemContribuicao)}
+										</span>
+									</div>
+								</div>
+
+								<Accordion.ItemContent>
+									<div
+										class="border-t border-surface-200-800 text-sm text-surface-700-300"
+									>
+										<h5 class="h5 font-bold">Detalhes do Cálculo</h5>
+										<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+											<div class="flex justify-between">
+												<span>Salário Bruto:</span>
+												<span class="font-medium"
+													>{formatCurrency(pessoa.salarioBruto)}</span
+												>
+											</div>
+											<div class="flex justify-between">
+												<span>Bônus:</span>
+												<span class="font-medium"
+													>{formatCurrency(pessoa.bonus)}</span
+												>
+											</div>
+											<div class="flex justify-between">
+												<span
+													>INSS ({formatPercent(
+														pessoa.porcentagemTaxaInss
+													)}):</span
+												>
+												<span class="font-medium text-error-600-400">
+													- {formatCurrency(
+														calculateInssValue(pessoa.salarioBruto)
+													)}
+												</span>
+											</div>
+											<div class="flex justify-between">
+												<span
+													>Alimentação ({formatPercent(
+														pessoa.porcentagemTaxaAlimentacao
+													)}):</span
+												>
+												<span class="font-medium text-error-600-400">
+													- {formatCurrency(
+														pessoa.salarioBruto *
+															pessoa.porcentagemTaxaAlimentacao
+													)}
+												</span>
+											</div>
+											<div class="flex justify-between">
+												<span
+													>Passagem ({formatPercent(
+														pessoa.porcentagemTaxaPassagem
+													)}):</span
+												>
+												<span class="font-medium text-error-600-400">
+													- {formatCurrency(
+														pessoa.salarioBruto *
+															pessoa.porcentagemTaxaPassagem
+													)}
+												</span>
+											</div>
+											<div class="flex justify-between">
+												<span>Ticket Alimentação:</span>
+												<span class="font-medium"
+													>{formatCurrency(
+														pessoa.valorTicketAlimentacao
+													)}</span
+												>
+											</div>
+											<div class="flex justify-between">
+												<span>Regime:</span>
+												<span class="font-medium"
+													>{pessoa.clt ? 'CLT' : 'Outro'}</span
+												>
+											</div>
+										</div>
+									</div>
+								</Accordion.ItemContent>
 							</div>
-							<div class="flex justify-between">
-								<span class="text-surface-600-400">Valor a pagar:</span>
-								<span class="font-bold text-error-700-300"
-									>{formatCurrency(pessoa.valorAPagar)}</span
-								>
-							</div>
-							<div class="flex justify-between">
-								<span class="text-surface-600-400">Sobra do Salário:</span>
-								<span class="font-bold text-success-700-300"
-									>{formatCurrency(pessoa.sobraSalario)}</span
-								>
-							</div>
-							<div class="flex items-center justify-between">
-								<span class="text-surface-600-400">Contribuição (% Renda):</span>
-								<span class="badge preset-filled-surface-700-300">
-									{formatPercent(pessoa.porcentagemContribuicao)}
-								</span>
-							</div>
-						</div>
-					</div>
-				{:else}
-					<div
-						class="card p-4 text-center text-surface-700-300 preset-filled-surface-200-800 border border-surface-200-800"
-					>
-						Nenhuma pessoa cadastrada.
-					</div>
-				{/each}
+						</Accordion.Item>
+					{/each}
+				</Accordion>
 			{/if}
 		</div>
 	</div>

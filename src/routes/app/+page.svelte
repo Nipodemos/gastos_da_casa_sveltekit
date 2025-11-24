@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import Despesas from './components/Despesas.svelte';
 	import Pessoas from './components/Pessoas.svelte';
 
@@ -11,7 +11,7 @@
 	 * Se não houver, usa o mês atual.
 	 */
 	let selectedDate: string = $derived(
-		$page.url.searchParams.get('date') || new Date().toISOString().slice(0, 7)
+		page.url.searchParams.get('date') || new Date().toISOString().slice(0, 7)
 	);
 
 	// --- Estado Compartilhado ---
@@ -82,6 +82,12 @@
 			<p class="text-surface-600-400">Um resumo financeiro do seu lar.</p>
 		</div>
 		<div class="flex items-center gap-2">
+			<button
+				class="btn preset-filled-secondary-200-800"
+				onclick={() => goto('/app/despesas-fixas')}
+			>
+				<i class="fa-solid fa-calendar-check mr-2"></i> Despesas Fixas
+			</button>
 			<button class="btn preset-filled-primary-200-800">
 				<i class="fa-solid fa-share-nodes mr-2"></i> Compartilhar
 			</button>

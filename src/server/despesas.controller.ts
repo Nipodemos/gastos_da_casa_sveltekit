@@ -12,9 +12,9 @@ export class DespesasController {
 		const fixas = await despesaFixaRepo.find({ where: { ativa: true } });
 
 		// 2. Definir o intervalo do mês
-		const inicioMes = new Date(ano, mes - 1, 1);
-		const fimMes = new Date(ano, mes, 0);
-
+		// 2. Definir o intervalo do mês em UTC para evitar problemas de fuso horário
+		const inicioMes = new Date(Date.UTC(ano, mes - 1, 1));
+		const fimMes = new Date(Date.UTC(ano, mes, 0, 23, 59, 59, 999));
 		for (const fixa of fixas) {
 			// Verificar se a despesa fixa começou antes ou durante este mês
 			if (fixa.inicio && fixa.inicio > fimMes) {
@@ -30,11 +30,12 @@ export class DespesasController {
 
 			if (!existente) {
 				// 4. Se não existe, criar
-				let dataVencimento = new Date(ano, mes - 1, fixa.diaVencimento);
+				// Usar UTC para garantir consistência
+				let dataVencimento = new Date(Date.UTC(ano, mes - 1, fixa.diaVencimento));
 				
 				// Ajuste simples para dias inválidos (ex: 31 de fevereiro)
-				if (dataVencimento.getMonth() !== mes - 1) {
-					dataVencimento = new Date(ano, mes, 0); // Último dia do mês
+				if (dataVencimento.getUTCMonth() !== mes - 1) {
+					dataVencimento = new Date(Date.UTC(ano, mes, 0)); // Último dia do mês
 				}
 
 				await despesaRepo.insert({
@@ -43,9 +44,14 @@ export class DespesasController {
 					data: dataVencimento,
 					despesaFixaId: fixa.id,
 					paga: false,
+					fixa: true,
 					excluida: false
 				});
+			} else if (!existente.fixa) {
+				// Se já existe mas não está marcada como fixa, atualiza
+				await despesaRepo.update(existente.id, { fixa: true });
 			}
+
 		}
 	}
 }

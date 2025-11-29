@@ -3,6 +3,7 @@
 	import { Despesa } from '../../../shared/despesa.model';
 	import { Progress } from '@skeletonlabs/skeleton-svelte';
 	import { DespesasController } from '../../../server/despesas.controller';
+	import { getContext } from 'svelte';
 
 	/**
 	 * Props do componente Despesas.
@@ -21,6 +22,12 @@
 	/** Indica se os dados estão sendo carregados */
 	let loading: boolean = $state(false);
 
+	/** ID da despesa que está sendo alterada (para loading no botão) */
+	let togglingId: string | null = $state(null);
+
+	/** Gerenciador de Toasts do Skeleton */
+	const toaster: any = getContext('toaster');
+
 	// --- Estado dos Modais ---
 
 	/** Controla a visibilidade do modal de despesa */
@@ -30,7 +37,12 @@
 	let editingDespesa: Despesa | null = $state(null);
 
 	/** O formulário da despesa */
-	let despesaForm: { descricao: string; valor: number; data: string; paga: boolean } = $state({
+	let despesaForm: {
+		descricao: string;
+		valor: number;
+		data: string;
+		paga: boolean;
+	} = $state({
 		descricao: '',
 		valor: 0,
 		data: new Date().toISOString().slice(0, 10),
@@ -69,10 +81,9 @@
 			// Garante que as despesas fixas sejam geradas para este mês
 			await DespesasController.garantirDespesasFixas(month, year);
 
-			const startOfMonth = new Date(year, month - 1, 1);
-			const endOfMonth = new Date(year, month, 0);
-			// Ajusta o final do mês para cobrir o dia todo
-			endOfMonth.setHours(23, 59, 59, 999);
+			// Cria datas em UTC para garantir que cobrimos o mês inteiro independentemente do fuso horário
+			const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
+			const endOfMonth = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
 
 			// Busca as despesas no banco de dados
 			despesas = await remult.repo(Despesa).find({
@@ -84,7 +95,7 @@
 			});
 		} catch (error) {
 			console.error('Erro ao carregar despesas:', error);
-			alert('Erro ao carregar dados.');
+			toaster.create({ description: 'Erro ao carregar dados.', type: 'error' });
 		} finally {
 			loading = false;
 		}
@@ -139,23 +150,67 @@
 			const [y, m, d] = despesaForm.data.split('-').map(Number);
 			const dateObj = new Date(y, m - 1, d);
 
-			if (editingDespesa) {
-				await repo.update(editingDespesa.id, {
-					...despesaForm,
-					data: dateObj
-				});
-			} else {
-				await repo.insert({
-					...despesaForm,
-					data: dateObj,
-					excluida: false
-				});
-			}
-			showDespesaModal = false;
-			await loadData(selectedDate);
+			const promise = (async () => {
+				if (editingDespesa) {
+					await repo.update(editingDespesa.id, {
+						...despesaForm,
+						data: dateObj
+					});
+				} else {
+					await repo.insert({
+						...despesaForm,
+						data: dateObj,
+						excluida: false
+					});
+				}
+				showDespesaModal = false;
+				await loadData(selectedDate);
+			})();
+
+			toaster.promise(promise, {
+				loading: { description: 'Salvando despesa...' },
+				success: { description: 'Despesa salva com sucesso!' },
+				error: { description: 'Erro ao salvar despesa.' }
+			});
+
+			await promise;
 		} catch (error) {
 			console.error('Erro ao salvar despesa:', error);
-			alert('Erro ao salvar despesa.');
+			// O toaster.promise já lida com o erro visualmente
+		}
+	}
+
+	/**
+	 * Alterna o status de pagamento da despesa.
+	 * @param despesa A despesa a ser alterada.
+	 */
+	async function togglePaga(despesa: Despesa) {
+		if (togglingId === despesa.id) return; // Evita duplo clique
+		togglingId = despesa.id;
+
+		const novoStatus = !despesa.paga;
+		const promise = (async () => {
+			await remult.repo(Despesa).update(despesa.id, { paga: novoStatus });
+			// Atualiza localmente
+			despesa.paga = novoStatus;
+		})();
+
+		toaster.promise(promise, {
+			loading: { description: 'Atualizando status...' },
+			success: {
+				description: novoStatus
+					? 'Despesa marcada como paga!'
+					: 'Despesa marcada como pendente!'
+			},
+			error: { description: 'Erro ao alterar status.' }
+		});
+
+		try {
+			await promise;
+		} catch (error) {
+			console.error('Erro ao alterar status da despesa:', error);
+		} finally {
+			togglingId = null;
 		}
 	}
 
@@ -165,13 +220,17 @@
 	 */
 	async function deleteDespesa(despesa: Despesa) {
 		if (!confirm('Tem certeza que deseja excluir esta despesa?')) return;
-		try {
+
+		const promise = (async () => {
 			await remult.repo(Despesa).delete(despesa.id);
 			await loadData(selectedDate);
-		} catch (error) {
-			console.error('Erro ao excluir despesa:', error);
-			alert('Erro ao excluir despesa.');
-		}
+		})();
+
+		toaster.promise(promise, {
+			loading: { description: 'Excluindo despesa...' },
+			success: { description: 'Despesa excluída com sucesso!' },
+			error: { description: 'Erro ao excluir despesa.' }
+		});
 	}
 
 	/**
@@ -198,7 +257,7 @@
 				<thead class="bg-surface-200-800">
 					<tr>
 						<th>Descrição</th>
-						<th>Data</th>
+						<th class="text-center">Status</th>
 						<th class="">Valor</th>
 						<th class="">Ações</th>
 					</tr>
@@ -217,12 +276,52 @@
 					{:else}
 						{#each despesas as despesa}
 							<tr class="bg-surface-200-800">
-								<td>{despesa.descricao}</td>
-								<td>{new Date(despesa.data).toLocaleDateString('pt-BR')}</td>
+								<td>
+									{despesa.descricao}
+									{#if despesa.fixa}
+										<i
+											class="fa-solid fa-thumbtack ml-2 text-surface-400"
+											title="Despesa Fixa"
+										></i>
+									{/if}
+								</td>
+								<td class="text-center align-middle">
+									{#if despesa.paga}
+										<span class="badge preset-filled-success-500">Pago</span>
+									{:else}
+										<span class="badge preset-filled-surface-500">Pendente</span
+										>
+									{/if}
+								</td>
 								<td class=" font-bold text-error-500">
 									- {formatCurrency(despesa.valor)}
 								</td>
-								<td class="space-x-2">
+								<td class="flex items-center space-x-2">
+									<!-- Botão de Marcar como Pago/Pendente -->
+									<button
+										class="btn-icon btn-icon-sm {despesa.paga
+											? 'preset-filled-surface-500'
+											: 'preset-filled-success-500'}"
+										title={despesa.paga
+											? 'Marcar como pendente'
+											: 'Marcar como pago'}
+										onclick={() => togglePaga(despesa)}
+										disabled={togglingId === despesa.id}
+									>
+										{#if togglingId === despesa.id}
+											<Progress value={null} class="h-4 w-4">
+												<Progress.Circle>
+													<Progress.CircleTrack />
+													<Progress.CircleRange />
+												</Progress.Circle>
+											</Progress>
+										{:else if despesa.paga}
+											<i class="fa-solid fa-xmark"></i>
+										{:else}
+											<i class="fa-solid fa-check"></i>
+										{/if}
+									</button>
+
 									<button
 										class="btn-icon btn-icon-sm preset-filled-primary-200-800"
 										title="Editar"
@@ -273,16 +372,19 @@
 				</label>
 				<label class="label">
 					<span>Valor (R$)</span>
-					<input class="input" type="number" step="0.01" bind:value={despesaForm.valor} required />
+					<input
+						class="input"
+						type="number"
+						step="0.01"
+						bind:value={despesaForm.valor}
+						required
+					/>
 				</label>
 				<label class="label">
 					<span>Data</span>
 					<input class="input" type="date" bind:value={despesaForm.data} required />
 				</label>
-				<label class="flex items-center space-x-2">
-					<input class="checkbox" type="checkbox" bind:checked={despesaForm.paga} />
-					<span>Paga</span>
-				</label>
+
 				<div class="flex justify-end gap-2">
 					<button
 						type="button"

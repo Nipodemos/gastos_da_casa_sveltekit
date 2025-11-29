@@ -19,6 +19,9 @@ export class Despesa {
 	@Fields.boolean()
 	paga: boolean = false;
 
+	@Fields.boolean({ allowApiUpdate: false })
+	fixa: boolean = false;
+
 	@Fields.string()
 	despesaFixaId: string = '';
 

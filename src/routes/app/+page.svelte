@@ -110,9 +110,7 @@
 
 		const footer = `
 *Despesas da Casa*: ${formatCurrency(totalDespesas)}
-
 *Receita da Casa (Total Pessoas)*: ${formatCurrency(receitaTotal)}
-
 *Contribuição sobre Renda*: ${formatPercent(averageContribution)}`;
 
 		const textToCopy = `${header}\n\n${body}${footer}`;

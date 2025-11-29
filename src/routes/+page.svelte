@@ -1,12 +1,48 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
 	import { enhance } from '$app/forms';
+	import { getContext } from 'svelte';
 
-	let { data, form }: PageProps = $props();
+	let { form }: PageProps = $props();
 	let formulario = $state({
 		senha: ''
 	});
 	let submitting = $state(false);
+
+	const toaster: any = getContext('toaster');
+
+	function handleLogin() {
+		return async ({ result, update }: any) => {
+			submitting = true;
+
+			const promise = (async () => {
+				if (result.type === 'failure') {
+					throw result.data?.error || 'Erro desconhecido';
+				} else if (result.type === 'redirect' || result.type === 'success') {
+					// Sucesso
+					return;
+				} else {
+					// Outros casos (error, etc)
+					throw 'Erro inesperado';
+				}
+			})();
+
+			toaster.promise(promise, {
+				loading: { description: 'Verificando credenciais...' },
+				success: { description: 'Login realizado com sucesso!' },
+				error: (err: any) => ({ description: err || 'Erro ao entrar.' })
+			});
+
+			try {
+				await promise;
+			} catch (error) {
+				// O toaster.promise já lida com o erro visualmente
+			} finally {
+				submitting = false;
+				await update();
+			}
+		};
+	}
 </script>
 
 <div class="flex h-screen w-full items-center justify-center bg-surface-50-950 p-4">
@@ -18,7 +54,7 @@
 			<p class="text-surface-600-400">Digite sua senha para entrar</p>
 		</div>
 
-		<form method="POST" use:enhance class="space-y-4">
+		<form method="POST" use:enhance={handleLogin} class="space-y-4">
 			<label class="label space-y-2">
 				<span class="font-medium">Senha</span>
 				<input

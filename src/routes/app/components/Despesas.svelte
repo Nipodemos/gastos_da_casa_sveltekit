@@ -5,6 +5,8 @@
 	import { DespesasController } from '../../../server/despesas.controller';
 	import { getContext } from 'svelte';
 
+	import { goto } from '$app/navigation';
+
 	/**
 	 * Props do componente Despesas.
 	 */
@@ -102,6 +104,29 @@
 	}
 
 	// --- Ações ---
+
+	/**
+	 * Navega para o mês anterior ou seguinte.
+	 * @param {number} offset - -1 para mês anterior, 1 para mês seguinte.
+	 */
+	function changeMonth(offset: number) {
+		const [year, month] = selectedDate.split('-').map(Number);
+		const d = new Date(year, month - 1 + offset, 1);
+		const y = d.getFullYear();
+		const m = String(d.getMonth() + 1).padStart(2, '0');
+		goto(`?date=${y}-${m}`, { noScroll: true });
+	}
+
+	/**
+	 * Formata a data (ano-mês) para um formato legível (Mês de Ano).
+	 * @param {string} dateString - A data no formato 'YYYY-MM'.
+	 * @returns {string} A data formatada.
+	 */
+	function formatMonthYear(dateString: string): string {
+		const [year, month] = dateString.split('-').map(Number);
+		const date = new Date(year, month - 1, 1);
+		return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(date);
+	}
 
 	/**
 	 * Abre o modal para adicionar uma nova despesa.
@@ -244,9 +269,29 @@
 </script>
 
 <div class="space-y-4 lg:col-span-2">
-	<div class="space-y-4 card border preset-outlined-surface-200-800 border-surface-200-800 p-4">
-		<div class="flex items-center justify-between">
-			<h3 class="h3">Despesas do Mês</h3>
+	<div
+		class="space-y-4 card border preset-outlined-surface-200-800 border-surface-200-800 p-4 shadow-sm"
+	>
+		<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+			<div class="flex items-center gap-2">
+				<button
+					class="btn-icon btn-icon-sm preset-filled-surface-200-800"
+					onclick={() => changeMonth(-1)}
+					aria-label="Mês anterior"
+				>
+					<i class="fa-solid fa-chevron-left"></i>
+				</button>
+				<h3 class="min-w-[180px] text-center h3 capitalize">
+					{formatMonthYear(selectedDate)}
+				</h3>
+				<button
+					class="btn-icon btn-icon-sm preset-filled-surface-200-800"
+					onclick={() => changeMonth(1)}
+					aria-label="Mês seguinte"
+				>
+					<i class="fa-solid fa-chevron-right"></i>
+				</button>
+			</div>
 			<button class="btn preset-filled-primary-200-800" onclick={openAddDespesa}>
 				<i class="fa-solid fa-plus mr-2"></i> Adicionar Despesa
 			</button>
@@ -285,7 +330,7 @@
 										></i>
 									{/if}
 								</td>
-								<td class="text-center align-middle">
+								<td class="">
 									{#if despesa.paga}
 										<span class="badge preset-filled-success-500">Pago</span>
 									{:else}

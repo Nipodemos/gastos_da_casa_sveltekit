@@ -10,7 +10,10 @@
  * @param salarioBruto - O salário bruto do trabalhador
  * @returns O valor do INSS a ser descontado
  */
-export function calculateInssValue(salarioBruto: number): number {
+export function calculateInssValue(salarioBruto: number, isClt: boolean): number {
+	if (!isClt) {
+		return 0;
+	}
 	let inss = 0;
 	let salario = salarioBruto;
 

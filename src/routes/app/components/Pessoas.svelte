@@ -74,6 +74,7 @@
 
 			return {
 				...p,
+				salarioLiquido: p.salarioLiquido,
 				porcentagemContribuicao,
 				valorAPagar,
 				sobraSalario
@@ -234,7 +235,7 @@
 					{#each pessoasCalculadas as pessoa}
 						<Accordion.Item value={pessoa.id}>
 							<div
-								class="space-y-4 card border border-surface-200-800 preset-filled-surface-200-800 p-4"
+								class="space-y-4 card border border-surface-200-800 preset-filled-surface-200-800 p-4 transition-shadow hover:shadow-md"
 							>
 								<div
 									class="flex items-center justify-between border-b border-surface-200-800 pb-2"
@@ -324,7 +325,10 @@
 												>
 												<span class="font-medium text-error-600-400">
 													- {formatCurrency(
-														calculateInssValue(pessoa.salarioBruto)
+														calculateInssValue(
+															pessoa.salarioBruto,
+															pessoa.clt
+														)
 													)}
 												</span>
 											</div>

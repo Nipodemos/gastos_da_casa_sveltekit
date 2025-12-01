@@ -172,7 +172,9 @@
 </script>
 
 <div class="space-y-4">
-	<div class="space-y-4 card border preset-outlined-surface-200-800 border-surface-200-800 p-4">
+	<div
+		class="space-y-4 card border preset-outlined-surface-200-800 border-surface-200-800 p-4 shadow-sm"
+	>
 		<div class="flex items-center justify-between">
 			<div>
 				<h3 class="h3">Despesas Fixas</h3>

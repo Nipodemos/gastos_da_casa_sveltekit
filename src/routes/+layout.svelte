@@ -3,10 +3,13 @@
 	import { remult, Remult } from 'remult';
 	import { createSubscriber } from 'svelte/reactivity';
 	import type { LayoutProps } from './$types';
-	import { createToaster, Toast } from '@skeletonlabs/skeleton-svelte';
+	import { createToaster, Toast, Progress } from '@skeletonlabs/skeleton-svelte';
 	import { setContext } from 'svelte';
+	import { navigating } from '$app/state';
 
 	let { children, data }: LayoutProps = $props();
+
+	$inspect(navigating);
 
 	const toaster = createToaster();
 	setContext('toaster', toaster);
@@ -46,6 +49,14 @@
 
 	initRemultSvelteReactivity();
 </script>
+
+{#if navigating.to}
+	<Progress value={null} class="absolute top-0 left-0 z-[999] w-full">
+		<Progress.Track>
+			<Progress.Range />
+		</Progress.Track>
+	</Progress>
+{/if}
 
 {@render children?.()}
 

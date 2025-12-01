@@ -6,7 +6,7 @@ import { calculateInssValue } from '$lib/utils/inss';
 	saving: (pessoa) => {
 		const baseCalculo = (pessoa.salarioBruto || 0);
 
-		const valorInss = calculateInssValue(baseCalculo);
+		const valorInss = calculateInssValue(baseCalculo, pessoa.clt);
 		
 		if (baseCalculo > 0 && pessoa.clt) {
 			// 1ª faixa: até R$ 1.518,00 -> 7,5%
@@ -28,12 +28,6 @@ import { calculateInssValue } from '$lib/utils/inss';
 
 		const descontoAlimentacao = (pessoa.salarioBruto || 0) * (pessoa.porcentagemTaxaAlimentacao || 0);
 		const descontoPassagem = (pessoa.salarioBruto || 0) * (pessoa.porcentagemTaxaPassagem || 0);
-
-		pessoa.salarioLiquido = baseCalculo +pessoa.valorTicketAlimentacao + pessoa.bonus - valorInss - descontoAlimentacao - descontoPassagem;
-
-		if (pessoa.salarioLiquido < 0) {
-			pessoa.salarioLiquido = 0;
-		}
 	}
 })
 export class Pessoa {
@@ -73,8 +67,23 @@ export class Pessoa {
 	@Fields.number({ required: true, defaultValue: () => 0 })
 	valorTicketAlimentacao: number = 0;
 
-	@Fields.number({ allowApiUpdate: false, validate: Validators.min(0) })
-	salarioLiquido: number = 0;
+	// @Fields.number({ allowApiUpdate: false, validate: Validators.min(0) })
+	get salarioLiquido(): number {
+		const baseCalculo = this.salarioBruto || 0;
+		const valorInss = calculateInssValue(baseCalculo, this.clt);
+		const descontoAlimentacao = baseCalculo * (this.porcentagemTaxaAlimentacao || 0);
+		const descontoPassagem = baseCalculo * (this.porcentagemTaxaPassagem || 0);
+
+		let liquido =
+			baseCalculo +
+			this.valorTicketAlimentacao +
+			this.bonus -
+			valorInss -
+			descontoAlimentacao -
+			descontoPassagem;
+
+		return liquido < 0 ? 0 : liquido;
+	}
 
 	@Fields.boolean()
 	clt: boolean = true;

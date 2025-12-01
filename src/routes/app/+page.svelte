@@ -45,31 +45,6 @@
 	let shareButtonText = $state('Compartilhar');
 	let shareButtonClass = $state('preset-filled-primary-200-800');
 
-	// --- Helpers ---
-
-	/**
-	 * Navega para o mês anterior ou seguinte.
-	 * @param {number} offset - -1 para mês anterior, 1 para mês seguinte.
-	 */
-	function changeMonth(offset: number) {
-		const [year, month] = selectedDate.split('-').map(Number);
-		const d = new Date(year, month - 1 + offset, 1);
-		const y = d.getFullYear();
-		const m = String(d.getMonth() + 1).padStart(2, '0');
-		goto(`?date=${y}-${m}`);
-	}
-
-	/**
-	 * Formata a data (ano-mês) para um formato legível (Mês de Ano).
-	 * @param {string} dateString - A data no formato 'YYYY-MM'.
-	 * @returns {string} A data formatada.
-	 */
-	function formatMonthYear(dateString: string): string {
-		const [year, month] = dateString.split('-').map(Number);
-		const date = new Date(year, month - 1, 1);
-		return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(date);
-	}
-
 	/**
 	 * Formata um valor numérico para moeda BRL.
 	 * @param {number} value - O valor a ser formatado.
@@ -102,9 +77,6 @@
 
 		let body = '';
 		pessoasInfo.forEach((p) => {
-			// Replace non-breaking space with normal space if needed, but formatCurrency usually returns &nbsp; sometimes?
-			// Intl.NumberFormat usually returns standard spaces or nbsp.
-			// Let's just use the value as is.
 			body += `*${p.nome}*: ${formatCurrency(p.valorAPagar)}\n`;
 		});
 
@@ -136,19 +108,26 @@
 
 <div class="relative space-y-8 p-4">
 	<!-- Header -->
-	<header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+	<header class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 		<div>
-			<h2 class="h2">Dashboard de Despesas da Casa</h2>
+			<h2
+				class="bg-gradient-to-br from-primary-500 to-secondary-500 box-decoration-clone bg-clip-text h2 text-transparent"
+			>
+				Dashboard de Despesas
+			</h2>
 			<p class="text-surface-600-400">Um resumo financeiro do seu lar.</p>
 		</div>
 		<div class="flex items-center gap-2">
 			<button
-				class="btn preset-filled-secondary-200-800"
+				class="btn preset-filled-secondary-200-800 transition-all hover:brightness-110"
 				onclick={() => goto('/app/despesas-fixas')}
 			>
 				<i class="fa-solid fa-calendar-check mr-2"></i> Despesas Fixas
 			</button>
-			<button class="btn {shareButtonClass}" onclick={handleShare}>
+			<button
+				class="btn {shareButtonClass} transition-all hover:brightness-110"
+				onclick={handleShare}
+			>
 				{#if shareButtonText === 'Compartilhar'}
 					<i class="fa-solid fa-share-nodes mr-2"></i>
 				{:else}
@@ -162,13 +141,13 @@
 	<!-- Summary Cards -->
 	<section class="grid grid-cols-1 gap-4 md:grid-cols-2">
 		<div
-			class="space-y-2 card preset-outlined-surface-200-800 border-l-4 border-primary-500 p-6"
+			class="space-y-2 card preset-outlined-surface-200-800 border-l-4 border-primary-500 p-6 transition-all hover:-translate-y-1 hover:shadow-lg"
 		>
 			<h3 class="h3">Total de Despesas</h3>
 			<p class="h1 text-primary-500">{formatCurrency(totalDespesas)}</p>
 		</div>
 		<div
-			class="space-y-2 card preset-outlined-surface-200-800 border-l-4 border-secondary-500 p-6"
+			class="space-y-2 card preset-outlined-surface-200-800 border-l-4 border-secondary-500 p-6 transition-all hover:-translate-y-1 hover:shadow-lg"
 		>
 			<h3 class="h3">Proporção de Contribuição</h3>
 			<p class="h1 text-secondary-500">
@@ -180,27 +159,6 @@
 			</p>
 		</div>
 	</section>
-
-	<!-- Month Navigation -->
-	<div
-		class="flex items-center justify-between card border border-surface-200-800 preset-filled-surface-100-900 p-4"
-	>
-		<button
-			class="btn-icon preset-filled-surface-200-800"
-			onclick={() => changeMonth(-1)}
-			aria-label="Mês anterior"
-		>
-			<i class="fa-solid fa-chevron-left"></i>
-		</button>
-		<h3 class="h3 capitalize">{formatMonthYear(selectedDate)}</h3>
-		<button
-			class="btn-icon preset-filled-surface-200-800"
-			onclick={() => changeMonth(1)}
-			aria-label="Mês seguinte"
-		>
-			<i class="fa-solid fa-chevron-right"></i>
-		</button>
-	</div>
 
 	<!-- Main Content Grid -->
 	<div class="grid grid-cols-1 gap-8 lg:grid-cols-3">

@@ -1,15 +1,23 @@
 <script lang="ts">
 	import { remult } from 'remult';
 	import { DespesaFixa } from '../../../shared/despesa-fixa.model';
-	import { Progress } from '@skeletonlabs/skeleton-svelte';
+	import { createToaster, Progress } from '@skeletonlabs/skeleton-svelte';
+
+	import { getContext } from 'svelte';
 
 	// --- Estado ---
+
+	/** Gerenciador de Toasts do Skeleton */
+	const toaster = getContext<ReturnType<typeof createToaster>>('toaster');
 
 	/** Lista de despesas fixas */
 	let despesasFixas: DespesaFixa[] = $state([]);
 
 	/** Indica se os dados estão sendo carregados */
 	let loading: boolean = $state(false);
+
+	/** ID da despesa fixa que está sendo alterada (para loading no botão) */
+	let togglingId: string | null = $state(null);
 
 	// --- Estado dos Modais ---
 
@@ -135,14 +143,19 @@
 	 * @param {DespesaFixa} despesaFixa - A despesa fixa a ser alternada.
 	 */
 	async function toggleAtiva(despesaFixa: DespesaFixa) {
+		if (togglingId === despesaFixa.id) return; // Evita duplo clique
+		togglingId = despesaFixa.id;
+
 		try {
 			await remult.repo(DespesaFixa).update(despesaFixa.id, {
 				ativa: !despesaFixa.ativa
 			});
-			await loadData();
+			despesaFixa.ativa = !despesaFixa.ativa;
 		} catch (error) {
 			console.error('Erro ao atualizar status:', error);
-			alert('Erro ao atualizar status.');
+			toaster.create({ description: 'Erro ao atualizar status.', type: 'error' });
+		} finally {
+			togglingId = null;
 		}
 	}
 
@@ -232,12 +245,17 @@
 										title={despesaFixa.ativa ? 'Desativar' : 'Ativar'}
 										aria-label={despesaFixa.ativa ? 'Desativar' : 'Ativar'}
 										onclick={() => toggleAtiva(despesaFixa)}
+										disabled={togglingId === despesaFixa.id}
 									>
-										<i
-											class="fa-solid fa-{despesaFixa.ativa
-												? 'pause'
-												: 'play'}"
-										></i>
+										{#if togglingId === despesaFixa.id}
+											<i class="fa-solid fa-spinner fa-spin"></i>
+										{:else}
+											<i
+												class="fa-solid fa-{despesaFixa.ativa
+													? 'pause'
+													: 'play'}"
+											></i>
+										{/if}
 									</button>
 									<button
 										class="btn-icon btn-icon-sm preset-filled-primary-200-800"

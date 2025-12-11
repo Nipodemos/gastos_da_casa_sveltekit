@@ -11,11 +11,9 @@
 	 * A data selecionada obtida da URL (query param 'date').
 	 * Se não houver, usa o mês atual.
 	 */
-	let selectedDate: string = $derived(
+	let mesAnoSelecionado: string = $derived(
 		page.url.searchParams.get('date') || new Date().toISOString().slice(0, 7)
 	);
-
-	// --- Estado Compartilhado ---
 
 	/**
 	 * O total das despesas, calculado pelo componente Despesas.
@@ -71,7 +69,7 @@
 	 * Gera o texto de resumo e copia para a área de transferência.
 	 */
 	async function handleShare() {
-		const [year, month] = selectedDate.split('-');
+		const [year, month] = mesAnoSelecionado.split('-');
 		const dateObj = new Date(Number(year), Number(month) - 1);
 		const monthName = dateObj.toLocaleString('pt-BR', { month: 'long' });
 		const header = `*Resumo de Despesas da Casa - ${monthName}/${year}*`;
@@ -164,7 +162,7 @@
 	<!-- Main Content Grid -->
 	<div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
 		<!-- Left Column: Expenses List (Takes up 2/3 on large screens) -->
-		<Despesas {selectedDate} bind:totalDespesas />
+		<Despesas {mesAnoSelecionado} bind:totalDespesas />
 
 		<!-- Right Column: People & Contribution (Takes up 1/3 on large screens) -->
 		<Pessoas {totalDespesas} bind:averageContribution bind:pessoasInfo bind:receitaTotal />

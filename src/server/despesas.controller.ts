@@ -47,9 +47,6 @@ export class DespesasController {
 					fixa: true,
 					excluida: false
 				});
-			} else if (!existente.fixa) {
-				// Se já existe mas não está marcada como fixa, atualiza
-				await despesaRepo.update(existente.id, { fixa: true });
 			}
 
 		}

@@ -1,20 +1,12 @@
 <script lang="ts">
 	import { remult } from 'remult';
 	import { Despesa } from '../../../shared/despesa.model';
-	import { Progress } from '@skeletonlabs/skeleton-svelte';
+	import { Progress, createToaster } from '@skeletonlabs/skeleton-svelte';
 	import { DespesasController } from '../../../server/despesas.controller';
 	import { getContext } from 'svelte';
 
 	import { goto } from '$app/navigation';
-
-	/**
-	 * Props do componente Despesas.
-	 */
-	interface Props {
-		selectedDate: string;
-		totalDespesas: number;
-	}
-	let { selectedDate, totalDespesas = $bindable(0) } = $props();
+	let { mesAnoSelecionado, totalDespesas = $bindable(0) } = $props();
 
 	// --- Estado ---
 
@@ -28,7 +20,7 @@
 	let togglingId: string | null = $state(null);
 
 	/** Gerenciador de Toasts do Skeleton */
-	const toaster: any = getContext('toaster');
+	const toaster = getContext<ReturnType<typeof createToaster>>('toaster');
 
 	// --- Estado dos Modais ---
 
@@ -57,7 +49,7 @@
 	 * Efeito que recarrega os dados sempre que a data selecionada muda.
 	 */
 	$effect(() => {
-		loadData(selectedDate);
+		loadData(mesAnoSelecionado);
 	});
 
 	/**
@@ -107,10 +99,10 @@
 
 	/**
 	 * Navega para o mês anterior ou seguinte.
-	 * @param {number} offset - -1 para mês anterior, 1 para mês seguinte.
+	 * @param {number} offset -> -1 para mês anterior, 1 para mês seguinte.
 	 */
 	function changeMonth(offset: number) {
-		const [year, month] = selectedDate.split('-').map(Number);
+		const [year, month] = mesAnoSelecionado.split('-').map(Number);
 		const d = new Date(year, month - 1 + offset, 1);
 		const y = d.getFullYear();
 		const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -134,18 +126,13 @@
 	 */
 	function openAddDespesa() {
 		editingDespesa = null;
+
 		despesaForm = {
 			descricao: '',
 			valor: 0,
-			data: new Date().toISOString().slice(0, 10), // Hoje
+			data: mesAnoSelecionado,
 			paga: false
 		};
-		// Se estiver adicionando em um mês específico, define o padrão para o dia 1 desse mês
-		const [year, month] = selectedDate.split('-').map(Number);
-		const today = new Date();
-		if (today.getMonth() + 1 !== month || today.getFullYear() !== year) {
-			despesaForm.data = `${year}-${String(month).padStart(2, '0')}-01`;
-		}
 
 		showDespesaModal = true;
 	}
@@ -248,7 +235,7 @@
 
 		const promise = (async () => {
 			await remult.repo(Despesa).delete(despesa.id);
-			await loadData(selectedDate);
+			await loadData(mesAnoSelecionado);
 		})();
 
 		toaster.promise(promise, {
@@ -282,7 +269,7 @@
 					<i class="fa-solid fa-chevron-left"></i>
 				</button>
 				<h3 class="min-w-[180px] text-center h3 capitalize">
-					{formatMonthYear(selectedDate)}
+					{formatMonthYear(mesAnoSelecionado)}
 				</h3>
 				<button
 					class="btn-icon btn-icon-sm preset-filled-surface-200-800"

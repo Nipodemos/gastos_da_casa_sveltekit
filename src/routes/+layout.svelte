@@ -63,6 +63,9 @@
 <Toast.Group {toaster}>
 	{#snippet children(toast)}
 		<Toast {toast}>
+			{#if toast.meta?.icon}
+				<i class={toast.meta.icon}></i>
+			{/if}
 			<Toast.Message>
 				<Toast.Title>{toast.title}</Toast.Title>
 				<Toast.Description>{toast.description}</Toast.Description>

@@ -26,6 +26,9 @@
 	/** Indica se os dados estão sendo carregados */
 	let loading: boolean = $state(false);
 
+	/** Gerenciador de Toasts do Skeleton */
+	const toaster = getContext<ReturnType<typeof createToaster>>('toaster');
+
 	// --- Estado dos Modais ---
 
 	/** Controla a visibilidade do modal de pessoa */
@@ -77,7 +80,8 @@
 				salarioLiquido: p.salarioLiquido,
 				porcentagemContribuicao,
 				valorAPagar,
-				sobraSalario
+				sobraSalario,
+				proporcaoReceita
 			};
 		})
 	);
@@ -95,11 +99,12 @@
 	 * Efeito que calcula a média de contribuição e atualiza a prop `averageContribution`.
 	 */
 	$effect(() => {
-		averageContribution =
-			pessoasCalculadas.length > 0
-				? pessoasCalculadas.reduce((acc, p) => acc + p.porcentagemContribuicao, 0) /
-					pessoasCalculadas.length
-				: 0;
+		averageContribution = 0;
+		if (pessoasCalculadas.length > 0) {
+			averageContribution =
+				pessoasCalculadas.reduce((acc, p) => acc + p.porcentagemContribuicao, 0) /
+				pessoasCalculadas.length;
+		}
 		pessoasInfo = pessoasCalculadas;
 		receitaTotal = totalReceita;
 	});
@@ -166,16 +171,44 @@
 	async function savePessoa() {
 		try {
 			const repo = remult.repo(Pessoa);
-			if (editingPessoa) {
-				await repo.update(editingPessoa.id, { ...pessoaForm });
-			} else {
-				await repo.insert({ ...pessoaForm });
-			}
-			showPessoaModal = false;
-			await loadData();
+
+			const promise = (async () => {
+				if (editingPessoa) {
+					const updatedPessoa = await repo.update(editingPessoa.id, { ...pessoaForm });
+					// Atualiza no array local
+					const index = pessoas.findIndex((p) => p.id === editingPessoa!.id);
+					if (index !== -1) {
+						pessoas[index] = updatedPessoa;
+					}
+				} else {
+					const newPessoa = await repo.insert({ ...pessoaForm });
+					pessoas = [...pessoas, newPessoa];
+				}
+
+				// Ordena por nome
+				pessoas.sort((a, b) => a.nome.localeCompare(b.nome));
+
+				showPessoaModal = false;
+			})();
+
+			toaster.promise(promise, {
+				loading: {
+					description: 'Salvando pessoa...',
+					meta: { icon: 'fa-solid fa-spinner fa-spin' }
+				},
+				success: {
+					description: 'Pessoa salva com sucesso!',
+					meta: { icon: 'fa-solid fa-check' }
+				},
+				error: {
+					description: 'Erro ao salvar pessoa.',
+					meta: { icon: 'fa-solid fa-exclamation' }
+				}
+			});
+
+			await promise;
 		} catch (error) {
 			console.error('Erro ao salvar pessoa:', error);
-			alert('Erro ao salvar pessoa.');
 		}
 	}
 
@@ -185,12 +218,31 @@
 	 */
 	async function deletePessoa(pessoa: Pessoa) {
 		if (!confirm('Tem certeza que deseja excluir esta pessoa?')) return;
+
 		try {
-			await remult.repo(Pessoa).delete(pessoa.id);
-			await loadData();
+			const promise = (async () => {
+				await remult.repo(Pessoa).delete(pessoa.id);
+				pessoas = pessoas.filter((p) => p.id !== pessoa.id);
+			})();
+
+			toaster.promise(promise, {
+				loading: {
+					description: 'Excluindo pessoa...',
+					meta: { icon: 'fa-solid fa-spinner fa-spin' }
+				},
+				success: {
+					description: 'Pessoa excluída com sucesso!',
+					meta: { icon: 'fa-solid fa-check' }
+				},
+				error: {
+					description: 'Erro ao excluir pessoa.',
+					meta: { icon: 'fa-solid fa-exclamation' }
+				}
+			});
+
+			await promise;
 		} catch (error) {
 			console.error('Erro ao excluir pessoa:', error);
-			alert('Erro ao excluir pessoa.');
 		}
 	}
 
@@ -290,11 +342,10 @@
 										</span>
 									</div>
 									<div class="flex items-center justify-between">
-										<span class="text-surface-800-200"
-											>Contribuição (% Renda):</span
+										<span class="text-surface-800-200">Proporção da Renda:</span
 										>
 										<span class="badge preset-filled-surface-700-300">
-											{formatPercent(pessoa.porcentagemContribuicao)}
+											{formatPercent(pessoa.proporcaoReceita)}
 										</span>
 									</div>
 								</div>

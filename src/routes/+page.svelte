@@ -2,6 +2,7 @@
 	import type { PageProps } from './$types';
 	import { enhance } from '$app/forms';
 	import { getContext } from 'svelte';
+	import type { createToaster } from '@skeletonlabs/skeleton-svelte';
 
 	let { form }: PageProps = $props();
 	let formulario = $state({
@@ -9,7 +10,7 @@
 	});
 	let submitting = $state(false);
 
-	const toaster: any = getContext('toaster');
+	const toaster: ReturnType<typeof createToaster> = getContext('toaster');
 
 	function handleLogin() {
 		return async ({ result, update }: any) => {
@@ -28,9 +29,20 @@
 			})();
 
 			toaster.promise(promise, {
-				loading: { description: 'Verificando credenciais...' },
-				success: { description: 'Login realizado com sucesso!' },
-				error: (err: any) => ({ description: err || 'Erro ao entrar.' })
+				loading: {
+					description: 'Verificando credenciais...',
+					meta: {
+						icon: 'fa-solid fa-spinner fa-spin'
+					}
+				},
+				success: {
+					description: 'Login realizado com sucesso!',
+					meta: { icon: 'fa-solid fa-check' }
+				},
+				error: {
+					description: 'Erro ao entrar.',
+					meta: { icon: 'fa-solid fa-exclamation' }
+				}
 			});
 
 			try {

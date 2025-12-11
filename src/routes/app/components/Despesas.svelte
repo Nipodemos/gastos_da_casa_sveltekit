@@ -85,7 +85,7 @@
 					data: { $gte: startOfMonth, $lte: endOfMonth },
 					excluida: false
 				},
-				orderBy: { data: 'asc' }
+				orderBy: { descricao: 'asc' }
 			});
 		} catch (error) {
 			console.error('Erro ao carregar despesas:', error);
@@ -162,6 +162,10 @@
 			const [y, m] = despesaForm.data.split('-').map(Number);
 			const dateObj = new Date(y, m - 1);
 
+			//capitalizar primeira letra da descrição antes de salvar
+			despesaForm.descricao =
+				despesaForm.descricao.charAt(0).toUpperCase() + despesaForm.descricao.slice(1);
+
 			const promise = (async () => {
 				if (editingDespesa) {
 					await repo.update(editingDespesa.id, {
@@ -194,8 +198,14 @@
 					}
 				}
 
-				// Ordena as despesas por data
-				despesas.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+				// Ordena as despesas por descricao
+				despesas.sort((a, b) =>
+					a.descricao.localeCompare(b.descricao, 'en', {
+						sensitivity: 'variant',
+						caseFirst: 'upper',
+						numeric: false
+					})
+				);
 
 				showDespesaModal = false;
 			})();
@@ -305,7 +315,7 @@
 
 		<div class="table-container overflow-hidden rounded-container">
 			<table class="table-hover table">
-				<thead class="bg-surface-200-800">
+				<thead class="bg-surface-300-700">
 					<tr>
 						<th>Descrição</th>
 						<th class="text-center">Status</th>
@@ -326,7 +336,7 @@
 						</tr>
 					{:else}
 						{#each despesas as despesa}
-							<tr class="bg-surface-200-800">
+							<tr class="odd:bg-surface-100-900 even:bg-surface-200-800">
 								<td>
 									{despesa.descricao}
 									{#if despesa.fixa}
@@ -351,8 +361,8 @@
 									<!-- Botão de Marcar como Pago/Pendente -->
 									<button
 										class="btn-icon btn-icon-sm {despesa.paga
-											? 'preset-filled-surface-500'
-											: 'preset-filled-success-500'}"
+											? 'preset-filled-surface-300-700'
+											: 'preset-filled-success-300-700'}"
 										title={despesa.paga
 											? 'Marcar como pendente'
 											: 'Marcar como pago'}
@@ -369,7 +379,7 @@
 									</button>
 
 									<button
-										class="btn-icon btn-icon-sm preset-filled-primary-200-800"
+										class="btn-icon btn-icon-sm preset-filled-primary-300-700"
 										title="Editar"
 										aria-label="Editar"
 										onclick={() => openEditDespesa(despesa)}
@@ -377,7 +387,7 @@
 										<i class="fa-solid fa-pen"></i>
 									</button>
 									<button
-										class="btn-icon btn-icon-sm preset-filled-error-200-800"
+										class="btn-icon btn-icon-sm preset-filled-error-300-700"
 										title="Excluir"
 										aria-label="Excluir"
 										onclick={() => deleteDespesa(despesa)}

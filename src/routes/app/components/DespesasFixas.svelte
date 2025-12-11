@@ -117,24 +117,50 @@
 			// Força o dia 1 conforme solicitado
 			const dateObj = new Date(y, m - 1, 1);
 
-			if (editingDespesaFixa) {
-				await repo.update(editingDespesaFixa.id, {
-					...form,
-					diaVencimento: 1,
-					inicio: dateObj
-				});
-			} else {
-				await repo.insert({
-					...form,
-					diaVencimento: 1,
-					inicio: dateObj
-				});
-			}
-			showModal = false;
-			await loadData();
+			const promise = (async () => {
+				if (editingDespesaFixa) {
+					const updated = await repo.update(editingDespesaFixa.id, {
+						...form,
+						diaVencimento: 1,
+						inicio: dateObj
+					});
+					const index = despesasFixas.findIndex((d) => d.id === editingDespesaFixa!.id);
+					if (index !== -1) {
+						despesasFixas[index] = updated;
+					}
+				} else {
+					const newDespesa = await repo.insert({
+						...form,
+						diaVencimento: 1,
+						inicio: dateObj
+					});
+					despesasFixas = [...despesasFixas, newDespesa];
+				}
+
+				// Ordena por dia de vencimento (mesmo sendo 1, mantém consistência)
+				despesasFixas.sort((a, b) => a.diaVencimento - b.diaVencimento);
+
+				showModal = false;
+			})();
+
+			toaster.promise(promise, {
+				loading: {
+					description: 'Salvando despesa fixa...',
+					meta: { icon: 'fa-solid fa-spinner fa-spin' }
+				},
+				success: {
+					description: 'Despesa fixa salva com sucesso!',
+					meta: { icon: 'fa-solid fa-check' }
+				},
+				error: {
+					description: 'Erro ao salvar despesa fixa.',
+					meta: { icon: 'fa-solid fa-exclamation' }
+				}
+			});
+
+			await promise;
 		} catch (error) {
 			console.error('Erro ao salvar despesa fixa:', error);
-			alert('Erro ao salvar despesa fixa.');
 		}
 	}
 
@@ -165,12 +191,31 @@
 	 */
 	async function deleteDespesaFixa(despesaFixa: DespesaFixa) {
 		if (!confirm('Tem certeza que deseja excluir esta despesa fixa?')) return;
+
 		try {
-			await remult.repo(DespesaFixa).delete(despesaFixa.id);
-			await loadData();
+			const promise = (async () => {
+				await remult.repo(DespesaFixa).delete(despesaFixa.id);
+				despesasFixas = despesasFixas.filter((d) => d.id !== despesaFixa.id);
+			})();
+
+			toaster.promise(promise, {
+				loading: {
+					description: 'Excluindo despesa fixa...',
+					meta: { icon: 'fa-solid fa-spinner fa-spin' }
+				},
+				success: {
+					description: 'Despesa fixa excluída com sucesso!',
+					meta: { icon: 'fa-solid fa-check' }
+				},
+				error: {
+					description: 'Erro ao excluir despesa fixa.',
+					meta: { icon: 'fa-solid fa-exclamation' }
+				}
+			});
+
+			await promise;
 		} catch (error) {
 			console.error('Erro ao excluir despesa fixa:', error);
-			alert('Erro ao excluir despesa fixa.');
 		}
 	}
 

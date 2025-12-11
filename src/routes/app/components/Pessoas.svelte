@@ -186,7 +186,13 @@
 				}
 
 				// Ordena por nome
-				pessoas.sort((a, b) => a.nome.localeCompare(b.nome));
+				pessoas.sort((a, b) =>
+					a.nome.localeCompare(b.nome, 'en', {
+						sensitivity: 'variant',
+						caseFirst: 'upper',
+						numeric: false
+					})
+				);
 
 				showPessoaModal = false;
 			})();

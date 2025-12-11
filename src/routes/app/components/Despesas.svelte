@@ -146,7 +146,7 @@
 		despesaForm = {
 			descricao: despesa.descricao,
 			valor: despesa.valor,
-			data: new Date(despesa.data).toISOString().slice(0, 10),
+			data: new Date(despesa.data).toISOString().slice(0, 7),
 			paga: despesa.paga
 		};
 		showDespesaModal = true;
@@ -159,8 +159,8 @@
 		try {
 			const repo = remult.repo(Despesa);
 			// Cria o objeto Date corrigindo a questão do fuso horário (simplificado)
-			const [y, m, d] = despesaForm.data.split('-').map(Number);
-			const dateObj = new Date(y, m - 1, d);
+			const [y, m] = despesaForm.data.split('-').map(Number);
+			const dateObj = new Date(y, m - 1);
 
 			const promise = (async () => {
 				if (editingDespesa) {
@@ -168,27 +168,58 @@
 						...despesaForm,
 						data: dateObj
 					});
+
+					// Verifica se a despesa ainda pertence ao mês selecionado
+					if (despesaForm.data.startsWith(mesAnoSelecionado)) {
+						// Atualiza no array local
+						const index = despesas.findIndex((d) => d.id === editingDespesa!.id);
+						if (index !== -1) {
+							// Forçamos o type casting ou ordem correta para garantir que 'data' seja Date
+							despesas[index] = { ...despesas[index], ...despesaForm, data: dateObj };
+						}
+					} else {
+						// Se mudou de mês, remove do array local
+						despesas = despesas.filter((d) => d.id !== editingDespesa!.id);
+					}
 				} else {
-					await repo.insert({
+					const newDespesa = await repo.insert({
 						...despesaForm,
 						data: dateObj,
 						excluida: false
 					});
+
+					// Verifica se a nova despesa pertence ao mês selecionado
+					if (despesaForm.data.startsWith(mesAnoSelecionado)) {
+						despesas = [...despesas, newDespesa];
+					}
 				}
+
+				// Ordena as despesas por data
+				despesas.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+
 				showDespesaModal = false;
-				await loadData(selectedDate);
 			})();
 
 			toaster.promise(promise, {
-				loading: { description: 'Salvando despesa...' },
-				success: { description: 'Despesa salva com sucesso!' },
-				error: { description: 'Erro ao salvar despesa.' }
+				loading: {
+					description: 'Salvando despesa...',
+					meta: {
+						icon: 'fa-solid fa-spinner fa-spin'
+					}
+				},
+				success: {
+					description: 'Despesa salva com sucesso!',
+					meta: { icon: 'fa-solid fa-check' }
+				},
+				error: {
+					description: 'Erro ao salvar despesa.',
+					meta: { icon: 'fa-solid fa-exclamation' }
+				}
 			});
 
 			await promise;
 		} catch (error) {
 			console.error('Erro ao salvar despesa:', error);
-			// O toaster.promise já lida com o erro visualmente
 		}
 	}
 
@@ -201,26 +232,14 @@
 		togglingId = despesa.id;
 
 		const novoStatus = !despesa.paga;
-		const promise = (async () => {
+
+		try {
 			await remult.repo(Despesa).update(despesa.id, { paga: novoStatus });
 			// Atualiza localmente
 			despesa.paga = novoStatus;
-		})();
-
-		toaster.promise(promise, {
-			loading: { description: 'Atualizando status...' },
-			success: {
-				description: novoStatus
-					? 'Despesa marcada como paga!'
-					: 'Despesa marcada como pendente!'
-			},
-			error: { description: 'Erro ao alterar status.' }
-		});
-
-		try {
-			await promise;
 		} catch (error) {
 			console.error('Erro ao alterar status da despesa:', error);
+			toaster.create({ description: 'Erro ao alterar status.', type: 'error' });
 		} finally {
 			togglingId = null;
 		}
@@ -341,12 +360,7 @@
 										disabled={togglingId === despesa.id}
 									>
 										{#if togglingId === despesa.id}
-											<Progress value={null} class="h-4 w-4">
-												<Progress.Circle>
-													<Progress.CircleTrack />
-													<Progress.CircleRange />
-												</Progress.Circle>
-											</Progress>
+											<i class="fa-solid fa-spinner fa-spin"></i>
 										{:else if despesa.paga}
 											<i class="fa-solid fa-xmark"></i>
 										{:else}
@@ -414,7 +428,7 @@
 				</label>
 				<label class="label">
 					<span>Data</span>
-					<input class="input" type="date" bind:value={despesaForm.data} required />
+					<input class="input" type="month" bind:value={despesaForm.data} required />
 				</label>
 
 				<div class="flex justify-end gap-2">

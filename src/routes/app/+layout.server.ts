@@ -11,10 +11,5 @@ export const load = (async ({ locals, url }) => {
 		// Incluímos `from` na URL para que possamos redirecionar de volta após o login.
 		throw redirect(303, `/`);
 	}
-
-	// Se o usuário estiver logado, a função load completa normalmente.
-	// As páginas filhas podem agora assumir que `locals.usuario` existe.
-	// Você pode até mesmo retornar os dados do usuário para disponibilizá-los
-	// para todos os componentes de layout e página dentro de `/sistema`.
 	return {};
 }) satisfies LayoutServerLoad;

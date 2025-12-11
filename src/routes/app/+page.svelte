@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
+	import type { PessoaCalculada } from '$lib/types';
 	import Despesas from './components/Despesas.svelte';
 	import Pessoas from './components/Pessoas.svelte';
 
@@ -32,7 +33,7 @@
 	 * Informações detalhadas das pessoas e seus cálculos.
 	 * Obtido do componente Pessoas via bind.
 	 */
-	let pessoasInfo: any[] = $state([]);
+	let pessoasInfo: PessoaCalculada[] = $state([]);
 
 	/**
 	 * Receita total da casa.

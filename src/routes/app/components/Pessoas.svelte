@@ -2,7 +2,9 @@
 	import { remult } from 'remult';
 	import { Pessoa } from '../../../shared/pessoa.model';
 	import { calculateInssValue } from '$lib/utils/inss';
-	import { Accordion } from '@skeletonlabs/skeleton-svelte';
+	import { Accordion, createToaster } from '@skeletonlabs/skeleton-svelte';
+	import type { PessoaCalculada } from '$lib/types';
+	import { getContext } from 'svelte';
 
 	/**
 	 * Props do componente Pessoas.
@@ -60,9 +62,7 @@
 	 * Calcula os valores individuais para cada pessoa com base no total de despesas.
 	 * Inclui a porcentagem de contribuição, valor a pagar e sobra do salário.
 	 */
-	let pessoasCalculadas: Array<
-		Pessoa & { porcentagemContribuicao: number; valorAPagar: number; sobraSalario: number }
-	> = $derived(
+	let pessoasCalculadas: Array<PessoaCalculada> = $derived(
 		pessoas.map((p) => {
 			// Proporção da renda total (para calcular quanto pagar)
 			const proporcaoReceita = totalReceita > 0 ? p.salarioLiquido / totalReceita : 0;

@@ -245,91 +245,120 @@
 			</button>
 		</div>
 
-		<div class="table-container overflow-hidden rounded-container">
-			<table class="table-hover table">
-				<thead class="bg-surface-200-800">
-					<tr>
-						<th>Descrição</th>
-						<th>Valor</th>
-						<th>Início</th>
-						<th>Status</th>
-						<th>Ações</th>
-					</tr>
-				</thead>
-				<tbody class="[&>tr]:hover:preset-tonal-primary-200-800">
-					{#if loading}
-						<tr class="h-5 bg-surface-200-800">
-							<td colspan="5" class="h-5 p-4 text-center">
-								<Progress value={null}>
-									<Progress.Track>
-										<Progress.Range />
-									</Progress.Track>
-								</Progress>
-							</td>
-						</tr>
-					{:else}
-						{#each despesasFixas as despesaFixa}
-							<tr class="bg-surface-200-800">
-								<td>{despesaFixa.descricao}</td>
-								<td class="font-bold text-error-500">
-									{formatCurrency(despesaFixa.valor)}
-								</td>
-								<td>{new Date(despesaFixa.inicio).toLocaleDateString('pt-BR')}</td>
-								<td>
-									{#if despesaFixa.ativa}
-										<span class="badge preset-filled-success-500">Ativa</span>
+		<div class="overflow-hidden rounded-container border border-surface-200-800">
+			<div
+				class="hidden grid-cols-[minmax(0,1fr)_130px_120px_128px_132px] items-center gap-3 bg-surface-300-700 px-4 py-3 text-sm font-semibold md:grid"
+			>
+				<div>Descrição</div>
+				<div class="text-right">Valor</div>
+				<div>Início</div>
+				<div class="text-center">Status</div>
+				<div class="text-left">Ações</div>
+			</div>
+
+			{#if loading}
+				<div class="h-5 bg-surface-200-800 p-4 text-center">
+					<Progress value={null}>
+						<Progress.Track>
+							<Progress.Range />
+						</Progress.Track>
+					</Progress>
+				</div>
+			{:else if despesasFixas.length === 0}
+				<div class="p-4 text-center text-surface-500">
+					Nenhuma despesa fixa cadastrada.
+				</div>
+			{:else}
+				<div class="space-y-2 p-2 md:space-y-0 md:p-0">
+					{#each despesasFixas as despesaFixa}
+						<div
+							class="odd:bg-surface-100-900 even:bg-surface-200-800 rounded-container border border-surface-200-800 p-3 md:grid md:grid-cols-[minmax(0,1fr)_130px_120px_128px_132px] md:items-center md:gap-3 md:rounded-none md:border-0 md:px-4 md:py-3 md:[&:hover]:preset-tonal-primary-200-800"
+						>
+							<div class="flex items-center justify-between gap-3 md:block">
+								<span class="text-xs font-medium uppercase tracking-wide text-surface-500 md:hidden"
+									>Descrição</span
+								>
+								<div class="min-w-0 flex-1 text-right md:text-left">
+									<span class="truncate">{despesaFixa.descricao}</span>
+								</div>
+							</div>
+
+							<div
+								class="mt-2 flex items-center justify-between gap-3 font-bold text-error-500 md:mt-0 md:block md:text-right"
+							>
+								<span class="text-xs font-medium uppercase tracking-wide text-surface-500 md:hidden"
+									>Valor</span
+								>
+								<span>{formatCurrency(despesaFixa.valor)}</span>
+							</div>
+
+							<div class="mt-2 flex items-center justify-between gap-3 md:mt-0 md:block">
+								<span class="text-xs font-medium uppercase tracking-wide text-surface-500 md:hidden"
+									>Início</span
+								>
+								<span>{new Date(despesaFixa.inicio).toLocaleDateString('pt-BR')}</span>
+							</div>
+
+							<div
+								class="mt-2 flex items-center justify-between gap-3 md:mt-0 md:flex md:h-full md:items-center md:justify-center"
+							>
+								<span class="text-xs font-medium uppercase tracking-wide text-surface-500 md:hidden"
+									>Status</span
+								>
+								{#if despesaFixa.ativa}
+									<span
+										class="badge preset-filled-success-500 md:inline-flex md:min-w-[92px] md:items-center md:justify-center md:text-center"
+										>Ativa</span
+									>
+								{:else}
+									<span
+										class="badge preset-filled-surface-500 md:inline-flex md:min-w-[92px] md:items-center md:justify-center md:text-center"
+										>Inativa</span
+									>
+								{/if}
+							</div>
+
+							<div class="mt-3 flex items-center justify-end gap-2 md:mt-0 md:justify-start">
+								<button
+									class="btn-icon btn-icon-sm {despesaFixa.ativa
+										? 'preset-filled-warning-200-800'
+										: 'preset-filled-success-200-800'}"
+									title={despesaFixa.ativa ? 'Desativar' : 'Ativar'}
+									aria-label={despesaFixa.ativa ? 'Desativar' : 'Ativar'}
+									onclick={() => toggleAtiva(despesaFixa)}
+									disabled={togglingId === despesaFixa.id}
+								>
+									{#if togglingId === despesaFixa.id}
+										<i class="fa-solid fa-spinner fa-spin"></i>
 									{:else}
-										<span class="badge preset-filled-surface-500">Inativa</span>
+										<i
+											class="fa-solid fa-{despesaFixa.ativa
+												? 'pause'
+												: 'play'}"
+										></i>
 									{/if}
-								</td>
-								<td class="space-x-2">
-									<button
-										class="btn-icon btn-icon-sm {despesaFixa.ativa
-											? 'preset-filled-warning-200-800'
-											: 'preset-filled-success-200-800'}"
-										title={despesaFixa.ativa ? 'Desativar' : 'Ativar'}
-										aria-label={despesaFixa.ativa ? 'Desativar' : 'Ativar'}
-										onclick={() => toggleAtiva(despesaFixa)}
-										disabled={togglingId === despesaFixa.id}
-									>
-										{#if togglingId === despesaFixa.id}
-											<i class="fa-solid fa-spinner fa-spin"></i>
-										{:else}
-											<i
-												class="fa-solid fa-{despesaFixa.ativa
-													? 'pause'
-													: 'play'}"
-											></i>
-										{/if}
-									</button>
-									<button
-										class="btn-icon btn-icon-sm preset-filled-primary-200-800"
-										title="Editar"
-										aria-label="Editar"
-										onclick={() => openEdit(despesaFixa)}
-									>
-										<i class="fa-solid fa-pen"></i>
-									</button>
-									<button
-										class="btn-icon btn-icon-sm preset-filled-error-200-800"
-										title="Excluir"
-										aria-label="Excluir"
-										onclick={() => deleteDespesaFixa(despesaFixa)}
-									>
-										<i class="fa-solid fa-trash"></i>
-									</button>
-								</td>
-							</tr>
-						{:else}
-							<tr>
-								<td colspan="5" class="text-center p-4 text-surface-500">
-									Nenhuma despesa fixa cadastrada.
-								</td>
-							</tr>
-						{/each}
-					{/if}
-				</tbody>
-			</table>
+								</button>
+								<button
+									class="btn-icon btn-icon-sm preset-filled-primary-200-800"
+									title="Editar"
+									aria-label="Editar"
+									onclick={() => openEdit(despesaFixa)}
+								>
+									<i class="fa-solid fa-pen"></i>
+								</button>
+								<button
+									class="btn-icon btn-icon-sm preset-filled-error-200-800"
+									title="Excluir"
+									aria-label="Excluir"
+									onclick={() => deleteDespesaFixa(despesaFixa)}
+								>
+									<i class="fa-solid fa-trash"></i>
+								</button>
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	</div>
 </div>

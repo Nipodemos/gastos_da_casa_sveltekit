@@ -10,9 +10,9 @@ import { autenticarComCodigoDeAcesso } from '../server/usuarios';
 async function processarLogin(event: Parameters<Actions['default']>[0]) {
 	const { request, cookies } = event;
 	const data = await request.formData();
-	const senha = data.get('senha') as string;
+	const senha = data.get('senha')?.toString().trim();
 
-	if (!senha?.trim()) {
+	if (!senha) {
 		return fail(400, { login: senha, error: 'Senha é obrigatória.' });
 	}
 

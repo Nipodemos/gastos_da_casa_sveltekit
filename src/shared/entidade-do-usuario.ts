@@ -9,6 +9,10 @@ function obterIdDoUsuarioAtualOuAnonimo() {
 	return remult.user?.id ?? ID_USUARIO_ANONIMO;
 }
 
+function criarFiltroPorUsuario() {
+	return { usuarioId: obterIdDoUsuarioAtualOuAnonimo() };
+}
+
 /**
  * Aplica às entidades o comportamento padrão de isolamento por `usuarioId`.
  */
@@ -22,10 +26,22 @@ export function aplicarOpcoesDeEntidadeDoUsuario<
 	) => Promise<void> | void
 ) {
 	opcoes.allowApiCrud = Allow.authenticated;
-	opcoes.apiPrefilter = () =>
-		({ usuarioId: obterIdDoUsuarioAtualOuAnonimo() }) as EntityFilter<tipoEntidade>;
-	opcoes.backendPrefilter = () =>
-		({ usuarioId: obterIdDoUsuarioAtualOuAnonimo() }) as EntityFilter<tipoEntidade>;
+	opcoes.apiPrefilter = () => {
+		const filtro = criarFiltroPorUsuario();
+		console.log('[remult][prefilter][api]', {
+			user: remult.user,
+			filtro
+		});
+		return filtro as EntityFilter<tipoEntidade>;
+	};
+	opcoes.backendPrefilter = () => {
+		const filtro = criarFiltroPorUsuario();
+		console.log('[remult][prefilter][backend]', {
+			user: remult.user,
+			filtro
+		});
+		return filtro as EntityFilter<tipoEntidade>;
+	};
 	opcoes.saving = async (entidade, evento) => {
 		const idUsuarioAtual = remult.user?.id;
 		if (idUsuarioAtual) {

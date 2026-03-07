@@ -1,6 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { remultApi } from 'remult/remult-sveltekit';
-import { type UserInfo } from 'remult';
+import { Remult, remult, type UserInfo } from 'remult';
 import jwt from 'jsonwebtoken';
 import { AUTH_SECRET, SENHA_LOGIN } from '$env/static/private';
 import { entities } from '$shared/entities';
@@ -19,6 +19,14 @@ interface DadosJWT {
 		isAdmin?: boolean;
 	};
 }
+
+Remult.onFind = (metadata, options) => {
+	console.log('[remult][server][find]', {
+		entity: metadata.key,
+		options,
+		user: remult.user
+	});
+};
 
 async function usuarioPodeAcessarAdmin(usuarioId: string) {
 	if (usuarioEhAdminBootstrap(usuarioId)) {

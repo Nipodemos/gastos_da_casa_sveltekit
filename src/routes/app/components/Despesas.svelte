@@ -79,14 +79,27 @@
 			// Cria datas em UTC para garantir que cobrimos o mês inteiro independentemente do fuso horário
 			const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
 			const endOfMonth = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
-
-			// Busca as despesas no banco de dados
-			despesas = await remult.repo(Despesa).find({
+			const opcoesBusca = {
 				where: {
 					data: { $gte: startOfMonth, $lte: endOfMonth },
 					excluida: false
 				},
-				orderBy: { descricao: 'asc' }
+				orderBy: { descricao: 'asc' as const }
+			};
+
+			console.log('[despesas][client] antes do find()', {
+				dateStr,
+				user: remult.user,
+				opcoesBusca
+			});
+
+			// Busca as despesas no banco de dados
+			despesas = await remult.repo(Despesa).find(opcoesBusca);
+
+			console.log('[despesas][client] resultado do find()', {
+				quantidade: despesas.length,
+				ids: despesas.map((despesa) => despesa.id),
+				user: remult.user
 			});
 		} catch (error) {
 			console.error('Erro ao carregar despesas:', error);

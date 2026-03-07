@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { criarTokenDaSessao } from '../server/auth';
+import jwt from 'jsonwebtoken';
+import { AUTH_SECRET } from '$env/static/private';
 import type { Actions } from './$types';
 import { autenticarComCodigoDeAcesso } from '../server/usuarios';
 
@@ -20,7 +21,7 @@ async function processarLogin(event: Parameters<Actions['default']>[0]) {
 		return fail(401, { senha: senha, error: 'Senha inválida.' });
 	}
 
-	const token = criarTokenDaSessao(loginResult.user);
+	const token = jwt.sign({ user: loginResult }, AUTH_SECRET, { expiresIn: '35d' });
 
 	cookies.set('session_token', token, {
 		path: '/',

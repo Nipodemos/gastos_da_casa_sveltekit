@@ -12,6 +12,7 @@ import {
 export interface AuthenticatedUser {
 	id: string;
 	name: string;
+	isAdmin?: boolean;
 }
 
 /**
@@ -32,6 +33,7 @@ export async function autenticarComCodigoDeAcesso(
 				createdAt: 'asc'
 			}
 		});
+		const senhaEhAdminBootstrap = codigoDeAcessoEhSenhaBootstrapDoAdmin(codigoDeAcesso);
 
 		const usuarioExistente = usuarios.find((usuario) =>
 			verificarCodigoDeAcesso(codigoDeAcesso, usuario.senhaHash)
@@ -39,14 +41,16 @@ export async function autenticarComCodigoDeAcesso(
 		if (usuarioExistente) {
 			return {
 				id: usuarioExistente.id,
-				name: usuarioExistente.nome
+				name: usuarioExistente.nome,
+				isAdmin: senhaEhAdminBootstrap
 			};
 		}
 
-		if (codigoDeAcessoEhSenhaBootstrapDoAdmin(codigoDeAcesso)) {
+		if (senhaEhAdminBootstrap) {
 			return {
 				id: ID_USUARIO_ADMIN_BOOTSTRAP,
-				name: NOME_USUARIO_ADMIN_BOOTSTRAP
+				name: NOME_USUARIO_ADMIN_BOOTSTRAP,
+				isAdmin: true
 			};
 		}
 

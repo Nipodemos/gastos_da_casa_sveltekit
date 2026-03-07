@@ -16,6 +16,7 @@ interface DadosJWT {
 	user: {
 		id: string;
 		name: string;
+		isAdmin?: boolean;
 	};
 }
 
@@ -64,7 +65,8 @@ export const api = remultApi({
 			}
 
 			const usuario = (payload as DadosJWT).user;
-			const roles = (await usuarioPodeAcessarAdmin(usuario.id)) ? ['admin'] : [];
+			const roles =
+				usuario.isAdmin || (await usuarioPodeAcessarAdmin(usuario.id)) ? ['admin'] : [];
 
 			return {
 				id: usuario.id,

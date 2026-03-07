@@ -1,58 +1,46 @@
-import { SENHA_LOGIN } from '$env/static/private';
 import type { RequestEvent } from '@sveltejs/kit';
+import { scryptSync, timingSafeEqual } from 'node:crypto';
 import { remult } from 'remult';
-import { tursoClient } from './database';
 import { Usuario } from '$shared/usuario.model';
 import { api } from './api';
-import {
-	gerarHashDoCodigoDeAcesso,
-	normalizarCodigoDeAcesso,
-	verificarCodigoDeAcesso
-} from './auth';
 
 export interface AuthenticatedUser {
 	id: string;
 	name: string;
 }
 
-export interface LoginResult {
-	user: AuthenticatedUser;
-	createdNow: boolean;
-	migratedLegacyData: boolean;
-}
-
 /**
- * Monta o nome padrão de exibição para uma nova conta criada automaticamente.
+ * Remove espaços extras do código de acesso antes de qualquer comparação.
  */
-function montarNomeDoUsuario(quantidadeDeUsuarios: number) {
-	return `Conta ${quantidadeDeUsuarios + 1}`;
+function normalizarCodigoDeAcesso(codigoDeAcesso: string) {
+	return codigoDeAcesso.trim();
 }
 
 /**
- * Atribui os registros antigos sem dono para o usuário recém-identificado.
+ * Compara um código de acesso em texto puro com o hash armazenado do usuário.
  */
-async function migrarDadosLegadosParaUsuario(usuarioId: string) {
-	await tursoClient.execute({
-		sql: "UPDATE despesas SET usuarioId = ? WHERE usuarioId IS NULL OR usuarioId = ''",
-		args: [usuarioId]
-	});
-	await tursoClient.execute({
-		sql: "UPDATE despesasFixas SET usuarioId = ? WHERE usuarioId IS NULL OR usuarioId = ''",
-		args: [usuarioId]
-	});
-	await tursoClient.execute({
-		sql: "UPDATE pessoas SET usuarioId = ? WHERE usuarioId IS NULL OR usuarioId = ''",
-		args: [usuarioId]
-	});
+function verificarCodigoDeAcesso(codigoDeAcesso: string, hashArmazenado: string) {
+	const [salt, hash] = hashArmazenado.split(':');
+	if (!salt || !hash) {
+		return false;
+	}
+
+	const calculatedHash = scryptSync(normalizarCodigoDeAcesso(codigoDeAcesso), salt, 64);
+	const storedHashBuffer = Buffer.from(hash, 'hex');
+	if (storedHashBuffer.length !== calculatedHash.length) {
+		return false;
+	}
+
+	return timingSafeEqual(storedHashBuffer, calculatedHash);
 }
 
 /**
- * Localiza ou cria uma conta a partir do código de acesso informado.
+ * Localiza uma conta existente a partir do código de acesso informado.
  */
 export async function autenticarComCodigoDeAcesso(
 	event: RequestEvent,
 	codigoDeAcesso: string
-): Promise<LoginResult | null> {
+): Promise<AuthenticatedUser | null> {
 	const codigoDeAcessoNormalizado = normalizarCodigoDeAcesso(codigoDeAcesso);
 	if (!codigoDeAcessoNormalizado) {
 		return null;
@@ -71,33 +59,11 @@ export async function autenticarComCodigoDeAcesso(
 		);
 		if (usuarioExistente) {
 			return {
-				user: {
-					id: usuarioExistente.id,
-					name: usuarioExistente.nome
-				},
-				createdNow: false,
-				migratedLegacyData: false
+				id: usuarioExistente.id,
+				name: usuarioExistente.nome
 			};
 		}
 
-		const novoUsuario = await repositorioDeUsuarios.insert({
-			nome: montarNomeDoUsuario(usuarios.length),
-			senhaHash: gerarHashDoCodigoDeAcesso(codigoDeAcessoNormalizado)
-		});
-
-		let migrouDadosLegados = false;
-		if (normalizarCodigoDeAcesso(SENHA_LOGIN) === codigoDeAcessoNormalizado) {
-			await migrarDadosLegadosParaUsuario(novoUsuario.id);
-			migrouDadosLegados = true;
-		}
-
-		return {
-			user: {
-				id: novoUsuario.id,
-				name: novoUsuario.nome
-			},
-			createdNow: true,
-			migratedLegacyData: migrouDadosLegados
-		};
+		return null;
 	});
 }

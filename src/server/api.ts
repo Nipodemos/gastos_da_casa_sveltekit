@@ -3,11 +3,14 @@ import { remultApi } from 'remult/remult-sveltekit';
 import { type UserInfo } from 'remult';
 import jwt from 'jsonwebtoken';
 import { AUTH_SECRET, SENHA_LOGIN } from '$env/static/private';
-import { scryptSync, timingSafeEqual } from 'node:crypto';
 import { entities } from '$shared/entities';
 
 import { DespesasController } from './despesas.controller';
 import { dataProvider, tursoClient } from './database';
+import {
+	usuarioEhAdminBootstrap,
+	verificarCodigoDeAcesso
+} from './auth';
 
 interface DadosJWT {
 	user: {
@@ -16,28 +19,12 @@ interface DadosJWT {
 	};
 }
 
-function normalizarCodigoDeAcesso(codigoDeAcesso: string) {
-	return codigoDeAcesso.trim();
-}
-
-function verificarCodigoDeAcesso(codigoDeAcesso: string, hashArmazenado: string) {
-	const [salt, hash] = hashArmazenado.split(':');
-	if (!salt || !hash) {
-		return false;
-	}
-
-	const calculatedHash = scryptSync(normalizarCodigoDeAcesso(codigoDeAcesso), salt, 64);
-	const storedHashBuffer = Buffer.from(hash, 'hex');
-	if (storedHashBuffer.length !== calculatedHash.length) {
-		return false;
-	}
-
-	return timingSafeEqual(storedHashBuffer, calculatedHash);
-}
-
 async function usuarioPodeAcessarAdmin(usuarioId: string) {
-	const senhaDoAdmin = normalizarCodigoDeAcesso(SENHA_LOGIN);
-	if (!senhaDoAdmin) {
+	if (usuarioEhAdminBootstrap(usuarioId)) {
+		return true;
+	}
+
+	if (!SENHA_LOGIN) {
 		return false;
 	}
 
@@ -51,7 +38,7 @@ async function usuarioPodeAcessarAdmin(usuarioId: string) {
 		return false;
 	}
 
-	return verificarCodigoDeAcesso(senhaDoAdmin, senhaHash);
+	return verificarCodigoDeAcesso(SENHA_LOGIN, senhaHash);
 }
 
 /**

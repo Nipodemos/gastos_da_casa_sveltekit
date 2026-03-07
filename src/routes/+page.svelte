@@ -63,7 +63,10 @@
 	>
 		<div class="space-y-2 text-center">
 			<h1 class="h2 font-bold">Bem-vindo</h1>
-			<p class="text-surface-600-400">Digite sua senha para entrar</p>
+			<p class="text-surface-600-400">Digite sua senha para entrar no seu espaço</p>
+			<p class="text-sm text-surface-500">
+				Se essa senha ainda não existir, uma conta nova será criada sem tela de cadastro.
+			</p>
 		</div>
 
 		<form method="POST" use:enhance={handleLogin} class="space-y-4">

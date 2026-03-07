@@ -1,7 +1,8 @@
 import { Entity, Fields, Validators } from 'remult';
+import { aplicarOpcoesDeEntidadeDoUsuario } from './entidade-do-usuario';
 
-@Entity<DespesaFixa>('despesasFixas', {
-	allowApiCrud: true
+@Entity<DespesaFixa>('despesasFixas', (options) => {
+	aplicarOpcoesDeEntidadeDoUsuario(options);
 })
 export class DespesaFixa {
 	@Fields.id()
@@ -19,8 +20,11 @@ export class DespesaFixa {
 	@Fields.boolean()
 	ativa: boolean = true;
 
-    @Fields.dateOnly()
-    inicio: Date = new Date();
+	@Fields.dateOnly()
+	inicio: Date = new Date();
+
+	@Fields.string({ includeInApi: false, allowApiUpdate: false })
+	usuarioId: string = '';
 
 	@Fields.createdAt()
 	createdAt?: Date;

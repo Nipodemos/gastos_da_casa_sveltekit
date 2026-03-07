@@ -5,18 +5,17 @@ import type { Handle } from '@sveltejs/kit';
 
 export const handleAuth: Handle = async ({ event, resolve }) => {
 	const token = event.cookies.get('session_token');
-	console.log('🔍 Token no cookie:', token ? 'presente' : 'ausente');
 
 	event.locals.logado = false;
+	event.locals.usuario = undefined;
 
 	if (token) {
 		const dadosJWT = verifySessionToken(token);
 
-		if (dadosJWT) {
+		if (dadosJWT?.user?.id) {
 			event.locals.logado = true;
+			event.locals.usuario = dadosJWT.user;
 		}
-	} else {
-		console.log('🔍 Nenhum token encontrado');
 	}
 
 	return resolve(event);

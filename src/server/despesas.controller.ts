@@ -1,9 +1,9 @@
-import { BackendMethod, remult } from 'remult';
+import { Allow, BackendMethod, remult } from 'remult';
 import { Despesa } from '../shared/despesa.model';
 import { DespesaFixa } from '../shared/despesa-fixa.model';
 
 export class DespesasController {
-	@BackendMethod({ allowed: true })
+	@BackendMethod({ allowed: Allow.authenticated })
 	static async garantirDespesasFixas(mes: number, ano: number) {
 		const despesaRepo = remult.repo(Despesa);
 		const despesaFixaRepo = remult.repo(DespesaFixa);
@@ -32,7 +32,7 @@ export class DespesasController {
 				// 4. Se não existe, criar
 				// Usar UTC para garantir consistência
 				let dataVencimento = new Date(Date.UTC(ano, mes - 1, fixa.diaVencimento));
-				
+
 				// Ajuste simples para dias inválidos (ex: 31 de fevereiro)
 				if (dataVencimento.getUTCMonth() !== mes - 1) {
 					dataVencimento = new Date(Date.UTC(ano, mes, 0)); // Último dia do mês
@@ -48,7 +48,6 @@ export class DespesasController {
 					excluida: false
 				});
 			}
-
 		}
 	}
 }

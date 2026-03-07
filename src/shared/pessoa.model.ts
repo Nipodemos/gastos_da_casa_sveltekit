@@ -1,18 +1,12 @@
 import { Entity, Fields, Validators } from 'remult';
 import { calculateInssValue } from '$lib/utils/inss';
+import { aplicarOpcoesDeEntidadeDoUsuario } from './entidade-do-usuario';
 
-@Entity<Pessoa>('pessoas', {
-	allowApiCrud: true,
-	saving: (pessoa) => {
-		const baseCalculo = (pessoa.salarioBruto || 0);
+@Entity<Pessoa>('pessoas', (options) => {
+	aplicarOpcoesDeEntidadeDoUsuario(options, (pessoa) => {
+		const baseCalculo = pessoa.salarioBruto || 0;
 
-		const valorInss = calculateInssValue(baseCalculo, pessoa.clt);
-		
 		if (baseCalculo > 0 && pessoa.clt) {
-			// 1ª faixa: até R$ 1.518,00 -> 7,5%
-			// 2ª faixa: de R$ 1.518,01 até R$ 2.793,88 -> 9%
-			// 3ª faixa: de R$ 2.793,89 até R$ 4.190,83 -> 12%
-			// 4ª faixa: de R$ 4.190,84 até R$ 8.157,41 -> 14%
 			if (baseCalculo <= 1518) {
 				pessoa.porcentagemTaxaInss = 0.075;
 			} else if (baseCalculo <= 2793.88) {
@@ -25,10 +19,7 @@ import { calculateInssValue } from '$lib/utils/inss';
 		} else {
 			pessoa.porcentagemTaxaInss = 0;
 		}
-
-		const descontoAlimentacao = (pessoa.salarioBruto || 0) * (pessoa.porcentagemTaxaAlimentacao || 0);
-		const descontoPassagem = (pessoa.salarioBruto || 0) * (pessoa.porcentagemTaxaPassagem || 0);
-	}
+	});
 })
 export class Pessoa {
 	@Fields.id()
@@ -74,7 +65,7 @@ export class Pessoa {
 		const descontoAlimentacao = baseCalculo * (this.porcentagemTaxaAlimentacao || 0);
 		const descontoPassagem = baseCalculo * (this.porcentagemTaxaPassagem || 0);
 
-		let liquido =
+		const liquido =
 			baseCalculo +
 			this.valorTicketAlimentacao +
 			this.bonus -
@@ -87,6 +78,9 @@ export class Pessoa {
 
 	@Fields.boolean()
 	clt: boolean = true;
+
+	@Fields.string({ includeInApi: false, allowApiUpdate: false })
+	usuarioId: string = '';
 
 	@Fields.createdAt()
 	createdAt?: Date;

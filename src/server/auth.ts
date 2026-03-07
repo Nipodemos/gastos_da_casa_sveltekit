@@ -9,23 +9,32 @@ interface DadosJWT {
 	};
 }
 
-export function normalizeAccessCode(accessCode: string) {
-	return accessCode.trim();
+/**
+ * Remove espaços extras do código de acesso antes de qualquer comparação.
+ */
+export function normalizarCodigoDeAcesso(codigoDeAcesso: string) {
+	return codigoDeAcesso.trim();
 }
 
-export function hashAccessCode(accessCode: string) {
+/**
+ * Gera o hash persistido do código de acesso usando `scrypt` com sal aleatório.
+ */
+export function gerarHashDoCodigoDeAcesso(codigoDeAcesso: string) {
 	const salt = randomBytes(16).toString('hex');
-	const hash = scryptSync(normalizeAccessCode(accessCode), salt, 64).toString('hex');
+	const hash = scryptSync(normalizarCodigoDeAcesso(codigoDeAcesso), salt, 64).toString('hex');
 	return `${salt}:${hash}`;
 }
 
-export function verifyAccessCode(accessCode: string, storedHash: string) {
-	const [salt, hash] = storedHash.split(':');
+/**
+ * Compara um código de acesso em texto puro com o hash armazenado do usuário.
+ */
+export function verificarCodigoDeAcesso(codigoDeAcesso: string, hashArmazenado: string) {
+	const [salt, hash] = hashArmazenado.split(':');
 	if (!salt || !hash) {
 		return false;
 	}
 
-	const calculatedHash = scryptSync(normalizeAccessCode(accessCode), salt, 64);
+	const calculatedHash = scryptSync(normalizarCodigoDeAcesso(codigoDeAcesso), salt, 64);
 	const storedHashBuffer = Buffer.from(hash, 'hex');
 	if (storedHashBuffer.length !== calculatedHash.length) {
 		return false;
@@ -34,11 +43,17 @@ export function verifyAccessCode(accessCode: string, storedHash: string) {
 	return timingSafeEqual(storedHashBuffer, calculatedHash);
 }
 
-export function createSessionToken(user: DadosJWT['user']): string {
-	return jwt.sign({ user }, AUTH_SECRET, { expiresIn: '35d' });
+/**
+ * Cria o token JWT persistido no cookie da sessão autenticada.
+ */
+export function criarTokenDaSessao(usuario: DadosJWT['user']): string {
+	return jwt.sign({ user: usuario }, AUTH_SECRET, { expiresIn: '35d' });
 }
 
-export function verifySessionToken(token: string): DadosJWT | null {
+/**
+ * Valida o token JWT da sessão e retorna o payload quando ele é válido.
+ */
+export function verificarTokenDaSessao(token: string): DadosJWT | null {
 	try {
 		const payload = jwt.verify(token, AUTH_SECRET);
 		if (typeof payload !== 'object' || !payload) {
@@ -49,4 +64,15 @@ export function verifySessionToken(token: string): DadosJWT | null {
 	} catch {
 		return null;
 	}
+}
+
+/**
+ * Extrai o usuário autenticado a partir do token armazenado no cookie da sessão.
+ */
+export function obterUsuarioDaSessao(token?: string) {
+	if (!token) {
+		return undefined;
+	}
+
+	return verificarTokenDaSessao(token)?.user;
 }

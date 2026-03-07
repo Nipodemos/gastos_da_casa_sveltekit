@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import type { PessoaCalculada } from '$lib/types';
 	import Despesas from './components/Despesas.svelte';
@@ -49,7 +50,7 @@
 	 * @param {number} value - O valor a ser formatado.
 	 * @returns {string} O valor formatado.
 	 */
-	function formatCurrency(value: number): string {
+	function formatarMoeda(value: number): string {
 		return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 	}
 
@@ -58,7 +59,7 @@
 	 * @param {number} value - O valor a ser formatado.
 	 * @returns {string} O valor formatado.
 	 */
-	function formatPercent(value: number): string {
+	function formatarPercentual(value: number): string {
 		return new Intl.NumberFormat('pt-BR', {
 			style: 'percent',
 			minimumFractionDigits: 2
@@ -68,7 +69,7 @@
 	/**
 	 * Gera o texto de resumo e copia para a área de transferência.
 	 */
-	async function handleShare() {
+	async function compartilharResumo() {
 		const [year, month] = mesAnoSelecionado.split('-');
 		const dateObj = new Date(Number(year), Number(month) - 1);
 		const monthName = dateObj.toLocaleString('pt-BR', { month: 'long' });
@@ -76,13 +77,13 @@
 
 		let body = '';
 		pessoasInfo.forEach((p) => {
-			body += `*${p.nome}*: ${formatCurrency(p.valorAPagar)}\n`;
+			body += `*${p.nome}*: ${formatarMoeda(p.valorAPagar)}\n`;
 		});
 
 		const footer = `
-*Despesas da Casa*: ${formatCurrency(totalDespesas)}
-*Receita da Casa (Total Pessoas)*: ${formatCurrency(receitaTotal)}
-*Contribuição sobre Renda*: ${formatPercent(averageContribution)}`;
+*Despesas da Casa*: ${formatarMoeda(totalDespesas)}
+*Receita da Casa (Total Pessoas)*: ${formatarMoeda(receitaTotal)}
+*Contribuição sobre Renda*: ${formatarPercentual(averageContribution)}`;
 
 		const textToCopy = `${header}\n\n${body}${footer}`;
 
@@ -119,13 +120,13 @@
 		<div class="flex items-center gap-2">
 			<button
 				class="btn preset-filled-secondary-200-800 transition-all hover:brightness-110"
-				onclick={() => goto('/app/despesas-fixas')}
+				onclick={() => goto(resolve('/app/despesas-fixas'))}
 			>
 				<i class="fa-solid fa-calendar-check mr-2"></i> Despesas Fixas
 			</button>
 			<button
 				class="btn {shareButtonClass} transition-all hover:brightness-110"
-				onclick={handleShare}
+				onclick={compartilharResumo}
 			>
 				{#if shareButtonText === 'Compartilhar'}
 					<i class="fa-solid fa-share-nodes mr-2"></i>
@@ -143,14 +144,14 @@
 			class="space-y-2 card preset-outlined-surface-200-800 border-l-4 border-primary-500 p-6 transition-all hover:-translate-y-1 hover:shadow-lg"
 		>
 			<h3 class="h3">Total de Despesas</h3>
-			<p class="h1 text-primary-500">{formatCurrency(totalDespesas)}</p>
+			<p class="h1 text-primary-500">{formatarMoeda(totalDespesas)}</p>
 		</div>
 		<div
 			class="space-y-2 card preset-outlined-surface-200-800 border-l-4 border-secondary-500 p-6 transition-all hover:-translate-y-1 hover:shadow-lg"
 		>
 			<h3 class="h3">Proporção de Contribuição</h3>
 			<p class="h1 text-secondary-500">
-				{formatPercent(averageContribution)}
+				{formatarPercentual(averageContribution)}
 				<span class="text-base text-surface-600-400">(Média)</span>
 			</p>
 			<p class="text-sm text-surface-600-400">

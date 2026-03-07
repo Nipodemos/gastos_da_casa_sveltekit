@@ -50,7 +50,7 @@
 	 * Efeito que carrega as despesas fixas quando o componente é montado.
 	 */
 	$effect(() => {
-		loadData();
+		carregarDados();
 	});
 
 	// --- Carregamento de Dados ---
@@ -58,7 +58,7 @@
 	/**
 	 * Carrega todas as despesas fixas.
 	 */
-	async function loadData() {
+	async function carregarDados() {
 		loading = true;
 		try {
 			despesasFixas = await remult.repo(DespesaFixa).find({
@@ -77,7 +77,7 @@
 	/**
 	 * Abre o modal para adicionar uma nova despesa fixa.
 	 */
-	function openAdd() {
+	function abrirModalNovaDespesaFixa() {
 		editingDespesaFixa = null;
 		const today = new Date();
 		form = {
@@ -94,7 +94,7 @@
 	 * Abre o modal para editar uma despesa fixa existente.
 	 * @param {DespesaFixa} despesaFixa - A despesa fixa a ser editada.
 	 */
-	function openEdit(despesaFixa: DespesaFixa) {
+	function abrirModalEditarDespesaFixa(despesaFixa: DespesaFixa) {
 		editingDespesaFixa = despesaFixa;
 		form = {
 			descricao: despesaFixa.descricao,
@@ -109,7 +109,7 @@
 	/**
 	 * Salva a despesa fixa (nova ou editada) no banco de dados.
 	 */
-	async function save() {
+	async function salvarDespesaFixa() {
 		try {
 			const repo = remult.repo(DespesaFixa);
 			// Cria o objeto Date corrigindo a questão do fuso horário
@@ -168,7 +168,7 @@
 	 * Alterna o status ativo/inativo de uma despesa fixa.
 	 * @param {DespesaFixa} despesaFixa - A despesa fixa a ser alternada.
 	 */
-	async function toggleAtiva(despesaFixa: DespesaFixa) {
+	async function alternarAtivacaoDespesaFixa(despesaFixa: DespesaFixa) {
 		if (togglingId === despesaFixa.id) return; // Evita duplo clique
 		togglingId = despesaFixa.id;
 
@@ -189,7 +189,7 @@
 	 * Exclui uma despesa fixa após confirmação.
 	 * @param {DespesaFixa} despesaFixa - A despesa fixa a ser excluída.
 	 */
-	async function deleteDespesaFixa(despesaFixa: DespesaFixa) {
+	async function excluirDespesaFixa(despesaFixa: DespesaFixa) {
 		if (!confirm('Tem certeza que deseja excluir esta despesa fixa?')) return;
 
 		try {
@@ -224,7 +224,7 @@
 	 * @param {number} value - O valor a ser formatado.
 	 * @returns {string} O valor formatado (ex: R$ 1.234,56).
 	 */
-	function formatCurrency(value: number): string {
+	function formatarMoeda(value: number): string {
 		return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 	}
 </script>
@@ -240,7 +240,7 @@
 					Despesas que se repetem mensalmente de forma automática
 				</p>
 			</div>
-			<button class="btn preset-filled-primary-200-800" onclick={openAdd}>
+			<button class="btn preset-filled-primary-200-800" onclick={abrirModalNovaDespesaFixa}>
 				<i class="fa-solid fa-plus mr-2"></i> Adicionar Despesa Fixa
 			</button>
 		</div>
@@ -270,7 +270,7 @@
 				</div>
 			{:else}
 				<div class="space-y-2 p-2 md:space-y-0 md:p-0">
-					{#each despesasFixas as despesaFixa}
+					{#each despesasFixas as despesaFixa (despesaFixa.id)}
 						<div
 							class="odd:bg-surface-100-900 even:bg-surface-200-800 rounded-container border border-surface-200-800 p-3 md:grid md:grid-cols-[minmax(0,1fr)_130px_120px_128px_132px] md:items-center md:gap-3 md:rounded-none md:border-0 md:px-4 md:py-3 md:[&:hover]:preset-tonal-primary-200-800"
 						>
@@ -289,7 +289,7 @@
 								<span class="text-xs font-medium uppercase tracking-wide text-surface-500 md:hidden"
 									>Valor</span
 								>
-								<span>{formatCurrency(despesaFixa.valor)}</span>
+								<span>{formatarMoeda(despesaFixa.valor)}</span>
 							</div>
 
 							<div class="mt-2 flex items-center justify-between gap-3 md:mt-0 md:block">
@@ -325,7 +325,7 @@
 										: 'preset-filled-success-200-800'}"
 									title={despesaFixa.ativa ? 'Desativar' : 'Ativar'}
 									aria-label={despesaFixa.ativa ? 'Desativar' : 'Ativar'}
-									onclick={() => toggleAtiva(despesaFixa)}
+									onclick={() => alternarAtivacaoDespesaFixa(despesaFixa)}
 									disabled={togglingId === despesaFixa.id}
 								>
 									{#if togglingId === despesaFixa.id}
@@ -342,7 +342,7 @@
 									class="btn-icon btn-icon-sm preset-filled-primary-200-800"
 									title="Editar"
 									aria-label="Editar"
-									onclick={() => openEdit(despesaFixa)}
+									onclick={() => abrirModalEditarDespesaFixa(despesaFixa)}
 								>
 									<i class="fa-solid fa-pen"></i>
 								</button>
@@ -350,7 +350,7 @@
 									class="btn-icon btn-icon-sm preset-filled-error-200-800"
 									title="Excluir"
 									aria-label="Excluir"
-									onclick={() => deleteDespesaFixa(despesaFixa)}
+									onclick={() => excluirDespesaFixa(despesaFixa)}
 								>
 									<i class="fa-solid fa-trash"></i>
 								</button>
@@ -372,7 +372,7 @@
 				class="space-y-4"
 				onsubmit={(e) => {
 					e.preventDefault();
-					save();
+					salvarDespesaFixa();
 				}}
 			>
 				<label class="label">

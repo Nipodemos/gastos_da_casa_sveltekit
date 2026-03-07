@@ -2,10 +2,16 @@ import { Allow, remult, type EntityFilter, type EntityOptions, type LifecycleEve
 
 const ID_USUARIO_ANONIMO = '__anonymous__';
 
+/**
+ * Retorna o identificador do usuário autenticado ou um marcador inválido para bloquear acesso anônimo.
+ */
 function obterIdDoUsuarioAtualOuAnonimo() {
 	return remult.user?.id ?? ID_USUARIO_ANONIMO;
 }
 
+/**
+ * Aplica às entidades o comportamento padrão de isolamento por `usuarioId`.
+ */
 export function aplicarOpcoesDeEntidadeDoUsuario<
 	tipoEntidade extends { usuarioId: string }
 >(

@@ -21,7 +21,9 @@ import { Usuario } from './usuario.model';
 // Adicione novas entidades aqui e elas serão automaticamente registradas
 export const entities: ClassType<unknown>[] = [Usuario, Despesa, Pessoa, DespesaFixa];
 
-// Função helper para obter a lista de entidades (opcional, para melhor tipagem)
-export function getEntities() {
+/**
+ * Retorna a lista centralizada de entidades registradas no sistema.
+ */
+export function obterEntidades() {
 	return entities;
 }

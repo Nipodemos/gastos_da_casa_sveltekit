@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { remult } from 'remult';
 	import type { LayoutProps } from './$types';
 
-	let { children, data }: LayoutProps = $props();
+	let { children }: LayoutProps = $props();
 </script>
 
 <div class="min-h-screen bg-surface-50-950">
@@ -9,7 +10,7 @@
 		<div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
 			<div>
 				<p class="text-xs tracking-[0.2em] text-surface-500 uppercase">Sessão ativa</p>
-				<p class="font-semibold text-surface-900-100">{data.usuario?.name ?? 'Conta'}</p>
+				<p class="font-semibold text-surface-900-100">{remult.user?.name ?? 'Conta'}</p>
 			</div>
 
 			<form method="POST" action="/logout">

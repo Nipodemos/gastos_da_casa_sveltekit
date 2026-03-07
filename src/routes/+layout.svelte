@@ -7,15 +7,15 @@
 	import { setContext } from 'svelte';
 	import { navigating } from '$app/state';
 
-	let { children, data }: LayoutProps = $props();
-
-	$inspect(navigating);
+	let { children }: LayoutProps = $props();
 
 	const toaster = createToaster();
 	setContext('toaster', toaster);
 
-	// To be done once in the application.
-	function initRemultSvelteReactivity() {
+	/**
+	 * Inicializa a integração de reatividade entre Svelte e Remult.
+	 */
+	function inicializarReatividadeDoRemultNoSvelte() {
 		// Auth reactivity (remult.user, remult.authenticated(), ...)
 		{
 			let update = () => {};
@@ -47,7 +47,7 @@
 		}
 	}
 
-	initRemultSvelteReactivity();
+	inicializarReatividadeDoRemultNoSvelte();
 </script>
 
 {#if navigating.to}

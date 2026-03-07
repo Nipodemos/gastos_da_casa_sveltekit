@@ -1,15 +1,26 @@
-import { remult } from "remult";
-import type { LayoutLoad } from "./$types";
+import { remult } from 'remult';
+import type { LayoutLoad } from './$types';
 
-export const load = ((event) => {
-  // Criar um fetch customizado que sempre inclui credenciais
-  const customFetch = (input: RequestInfo | URL, init?: RequestInit) => {
-    return event.fetch(input, {
-      ...init,
-      credentials: "include", // Força envio de cookies
-    });
-  };
+/**
+ * Encaminha as requisições do Remult incluindo sempre os cookies da sessão.
+ */
+function buscarComCredenciais(
+	event: Parameters<LayoutLoad>[0],
+	input: RequestInfo | URL,
+	init?: RequestInit
+) {
+	return event.fetch(input, {
+		...init,
+		credentials: 'include'
+	});
+}
 
-  remult.useFetch(customFetch);
-  return { logado: event.data.logado };
-}) satisfies LayoutLoad;
+/**
+ * Configura o `fetch` usado pelo Remult no cliente.
+ */
+const carregarLayoutCliente: LayoutLoad = (event) => {
+	remult.useFetch((input, init) => buscarComCredenciais(event, input, init));
+	return { logado: event.data.logado };
+};
+
+export const load = carregarLayoutCliente;

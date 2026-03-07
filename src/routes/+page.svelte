@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageProps } from './$types';
 	import { enhance } from '$app/forms';
+	import type { SubmitFunction } from '@sveltejs/kit';
 	import { getContext } from 'svelte';
 	import type { createToaster } from '@skeletonlabs/skeleton-svelte';
 
@@ -12,8 +13,11 @@
 
 	const toaster: ReturnType<typeof createToaster> = getContext('toaster');
 
-	function handleLogin() {
-		return async ({ result, update }: any) => {
+	/**
+	 * Cria o manipulador do formulário de login com feedback visual por toast.
+	 */
+	const criarManipuladorDeLogin: SubmitFunction = () => {
+		return async ({ result, update }) => {
 			submitting = true;
 
 			const promise = (async () => {
@@ -47,14 +51,14 @@
 
 			try {
 				await promise;
-			} catch (error) {
+			} catch {
 				// O toaster.promise já lida com o erro visualmente
 			} finally {
 				submitting = false;
 				await update();
 			}
 		};
-	}
+	};
 </script>
 
 <div class="flex h-screen w-full items-center justify-center bg-surface-50-950 p-4">
@@ -69,7 +73,7 @@
 			</p>
 		</div>
 
-		<form method="POST" use:enhance={handleLogin} class="space-y-4">
+		<form method="POST" use:enhance={criarManipuladorDeLogin} class="space-y-4">
 			<label class="label space-y-2">
 				<span class="font-medium">Senha</span>
 				<input

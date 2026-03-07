@@ -4,7 +4,11 @@ import { remult } from 'remult';
 import { tursoClient } from './database';
 import { Usuario } from '$shared/usuario.model';
 import { api } from './api';
-import { hashAccessCode, normalizeAccessCode, verifyAccessCode } from './auth';
+import {
+	gerarHashDoCodigoDeAcesso,
+	normalizarCodigoDeAcesso,
+	verificarCodigoDeAcesso
+} from './auth';
 
 export interface AuthenticatedUser {
 	id: string;
@@ -17,11 +21,17 @@ export interface LoginResult {
 	migratedLegacyData: boolean;
 }
 
-function buildUserName(userCount: number) {
-	return `Conta ${userCount + 1}`;
+/**
+ * Monta o nome padrão de exibição para uma nova conta criada automaticamente.
+ */
+function montarNomeDoUsuario(quantidadeDeUsuarios: number) {
+	return `Conta ${quantidadeDeUsuarios + 1}`;
 }
 
-async function migrateLegacyDataToUser(usuarioId: string) {
+/**
+ * Atribui os registros antigos sem dono para o usuário recém-identificado.
+ */
+async function migrarDadosLegadosParaUsuario(usuarioId: string) {
 	await tursoClient.execute({
 		sql: "UPDATE despesas SET usuarioId = ? WHERE usuarioId IS NULL OR usuarioId = ''",
 		args: [usuarioId]
@@ -36,55 +46,58 @@ async function migrateLegacyDataToUser(usuarioId: string) {
 	});
 }
 
-export async function authenticateWithAccessCode(
+/**
+ * Localiza ou cria uma conta a partir do código de acesso informado.
+ */
+export async function autenticarComCodigoDeAcesso(
 	event: RequestEvent,
-	accessCode: string
+	codigoDeAcesso: string
 ): Promise<LoginResult | null> {
-	const normalizedAccessCode = normalizeAccessCode(accessCode);
-	if (!normalizedAccessCode) {
+	const codigoDeAcessoNormalizado = normalizarCodigoDeAcesso(codigoDeAcesso);
+	if (!codigoDeAcessoNormalizado) {
 		return null;
 	}
 
 	return api.withRemult(event, async () => {
-		const userRepo = remult.repo(Usuario);
-		const users = await userRepo.find({
+		const repositorioDeUsuarios = remult.repo(Usuario);
+		const usuarios = await repositorioDeUsuarios.find({
 			orderBy: {
 				createdAt: 'asc'
 			}
 		});
 
-		const existingUser = users.find((user) =>
-			verifyAccessCode(normalizedAccessCode, user.senhaHash)
+		const usuarioExistente = usuarios.find((usuario) =>
+			verificarCodigoDeAcesso(codigoDeAcessoNormalizado, usuario.senhaHash)
 		);
-		if (existingUser) {
+		if (usuarioExistente) {
 			return {
 				user: {
-					id: existingUser.id,
-					name: existingUser.nome
+					id: usuarioExistente.id,
+					name: usuarioExistente.nome
 				},
 				createdNow: false,
 				migratedLegacyData: false
 			};
 		}
 
-		const newUser = await userRepo.insert({
-			nome: buildUserName(users.length),
-			senhaHash: hashAccessCode(normalizedAccessCode)
+		const novoUsuario = await repositorioDeUsuarios.insert({
+			nome: montarNomeDoUsuario(usuarios.length),
+			senhaHash: gerarHashDoCodigoDeAcesso(codigoDeAcessoNormalizado)
 		});
 
-		let migratedLegacyData = false;
-		if (normalizeAccessCode(SENHA_LOGIN) === normalizedAccessCode) {
-			await migrateLegacyDataToUser(newUser.id);
-			migratedLegacyData = true;
+		let migrouDadosLegados = false;
+		if (normalizarCodigoDeAcesso(SENHA_LOGIN) === codigoDeAcessoNormalizado) {
+			await migrarDadosLegadosParaUsuario(novoUsuario.id);
+			migrouDadosLegados = true;
 		}
 
 		return {
 			user: {
-				id: newUser.id,
-				name: newUser.nome
+				id: novoUsuario.id,
+				name: novoUsuario.nome
 			},
 			createdNow: true,
-			migratedLegacyData
+			migratedLegacyData: migrouDadosLegados
 		};
 	});
 }

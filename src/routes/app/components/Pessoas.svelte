@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { remult } from 'remult';
 	import { Pessoa } from '../../../shared/pessoa.model';
-	import { calculateInssValue } from '$lib/utils/inss';
+	import { calcularValorInss } from '$lib/utils/inss';
 	import { Accordion, createToaster } from '@skeletonlabs/skeleton-svelte';
 	import type { PessoaCalculada } from '$lib/types';
 	import { getContext } from 'svelte';
@@ -92,7 +92,7 @@
 	 * Efeito que carrega os dados ao montar o componente.
 	 */
 	$effect(() => {
-		loadData();
+		carregarDados();
 	});
 
 	/**
@@ -114,7 +114,7 @@
 	/**
 	 * Carrega a lista de pessoas do banco de dados.
 	 */
-	async function loadData() {
+	async function carregarDados() {
 		loading = true;
 		try {
 			pessoas = await remult.repo(Pessoa).find({
@@ -133,7 +133,7 @@
 	/**
 	 * Abre o modal para adicionar uma nova pessoa.
 	 */
-	function openAddPessoa() {
+	function abrirModalNovaPessoa() {
 		editingPessoa = null;
 		pessoaForm = {
 			nome: '',
@@ -151,7 +151,7 @@
 	 * Abre o modal para editar uma pessoa existente.
 	 * @param {Pessoa} pessoa - A pessoa a ser editada.
 	 */
-	function openEditPessoa(pessoa: Pessoa) {
+	function abrirModalEditarPessoa(pessoa: Pessoa) {
 		editingPessoa = pessoa;
 		pessoaForm = {
 			nome: pessoa.nome,
@@ -168,7 +168,7 @@
 	/**
 	 * Salva a pessoa (nova ou editada) no banco de dados.
 	 */
-	async function savePessoa() {
+	async function salvarPessoa() {
 		try {
 			const repo = remult.repo(Pessoa);
 
@@ -222,7 +222,7 @@
 	 * Exclui uma pessoa após confirmação.
 	 * @param {Pessoa} pessoa - A pessoa a ser excluída.
 	 */
-	async function deletePessoa(pessoa: Pessoa) {
+	async function excluirPessoa(pessoa: Pessoa) {
 		if (!confirm('Tem certeza que deseja excluir esta pessoa?')) return;
 
 		try {
@@ -257,7 +257,7 @@
 	 * @param {number} value - O valor a ser formatado.
 	 * @returns {string} O valor formatado (ex: R$ 1.234,56).
 	 */
-	function formatCurrency(value: number): string {
+	function formatarMoeda(value: number): string {
 		return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 	}
 
@@ -266,7 +266,7 @@
 	 * @param {number} value - O valor a ser formatado.
 	 * @returns {string} O valor formatado (ex: 10,00%).
 	 */
-	function formatPercent(value: number): string {
+	function formatarPercentual(value: number): string {
 		return new Intl.NumberFormat('pt-BR', {
 			style: 'percent',
 			minimumFractionDigits: 2
@@ -278,7 +278,7 @@
 	<div class="space-y-4 card border preset-outlined-surface-200-800 border-surface-200-800 p-4">
 		<div class="flex items-center justify-between">
 			<h3 class="h3">Pessoas e Salários</h3>
-			<button class="btn preset-filled-primary-200-800" onclick={openAddPessoa}>
+			<button class="btn preset-filled-primary-200-800" onclick={abrirModalNovaPessoa}>
 				<i class="fa-solid fa-plus mr-2"></i> Adicionar Pessoa
 			</button>
 		</div>
@@ -290,7 +290,7 @@
 				<div class="p-4 text-center">Nenhuma pessoa cadastrada.</div>
 			{:else}
 				<Accordion multiple class="space-y-4">
-					{#each pessoasCalculadas as pessoa}
+					{#each pessoasCalculadas as pessoa (pessoa.id)}
 						<Accordion.Item value={pessoa.id}>
 							<div
 								class="space-y-4 card border border-surface-200-800 preset-filled-surface-200-800 p-4 transition-shadow hover:shadow-md"
@@ -313,7 +313,7 @@
 											class="btn-icon btn-icon-sm preset-filled-primary-500"
 											title="Editar"
 											aria-label="Editar"
-											onclick={() => openEditPessoa(pessoa)}
+											onclick={() => abrirModalEditarPessoa(pessoa)}
 										>
 											<i class="fa-solid fa-pen"></i>
 										</button>
@@ -321,7 +321,7 @@
 											class="btn-icon btn-icon-sm preset-filled-error-500"
 											title="Excluir"
 											aria-label="Excluir"
-											onclick={() => deletePessoa(pessoa)}
+											onclick={() => excluirPessoa(pessoa)}
 										>
 											<i class="fa-solid fa-trash"></i>
 										</button>
@@ -332,26 +332,26 @@
 									<div class="flex justify-between">
 										<span class="text-surface-800-200">Salário Líquido:</span>
 										<span class="font-bold text-success-700-300">
-											{formatCurrency(pessoa.salarioLiquido)}
+											{formatarMoeda(pessoa.salarioLiquido)}
 										</span>
 									</div>
 									<div class="flex justify-between">
 										<span class="text-surface-800-200">Valor a pagar:</span>
 										<span class="font-bold text-error-700-300">
-											{formatCurrency(pessoa.valorAPagar)}
+											{formatarMoeda(pessoa.valorAPagar)}
 										</span>
 									</div>
 									<div class="flex justify-between">
 										<span class="text-surface-800-200">Sobra do Salário:</span>
 										<span class="font-bold text-success-700-300">
-											{formatCurrency(pessoa.sobraSalario)}
+											{formatarMoeda(pessoa.sobraSalario)}
 										</span>
 									</div>
 									<div class="flex items-center justify-between">
 										<span class="text-surface-800-200">Proporção da Renda:</span
 										>
 										<span class="badge preset-filled-surface-700-300">
-											{formatPercent(pessoa.proporcaoReceita)}
+											{formatarPercentual(pessoa.proporcaoReceita)}
 										</span>
 									</div>
 								</div>
@@ -365,24 +365,24 @@
 											<div class="flex justify-between">
 												<span>Salário Bruto:</span>
 												<span class="font-medium"
-													>{formatCurrency(pessoa.salarioBruto)}</span
+													>{formatarMoeda(pessoa.salarioBruto)}</span
 												>
 											</div>
 											<div class="flex justify-between">
 												<span>Bônus:</span>
 												<span class="font-medium"
-													>{formatCurrency(pessoa.bonus)}</span
+													>{formatarMoeda(pessoa.bonus)}</span
 												>
 											</div>
 											<div class="flex justify-between">
 												<span
-													>INSS ({formatPercent(
+													>INSS ({formatarPercentual(
 														pessoa.porcentagemTaxaInss
 													)}):</span
 												>
 												<span class="font-medium text-error-600-400">
-													- {formatCurrency(
-														calculateInssValue(
+													- {formatarMoeda(
+														calcularValorInss(
 															pessoa.salarioBruto,
 															pessoa.clt
 														)
@@ -391,12 +391,12 @@
 											</div>
 											<div class="flex justify-between">
 												<span
-													>Alimentação ({formatPercent(
+													>Alimentação ({formatarPercentual(
 														pessoa.porcentagemTaxaAlimentacao
 													)}):</span
 												>
 												<span class="font-medium text-error-600-400">
-													- {formatCurrency(
+													- {formatarMoeda(
 														pessoa.salarioBruto *
 															pessoa.porcentagemTaxaAlimentacao
 													)}
@@ -404,12 +404,12 @@
 											</div>
 											<div class="flex justify-between">
 												<span
-													>Passagem ({formatPercent(
+													>Passagem ({formatarPercentual(
 														pessoa.porcentagemTaxaPassagem
 													)}):</span
 												>
 												<span class="font-medium text-error-600-400">
-													- {formatCurrency(
+													- {formatarMoeda(
 														pessoa.salarioBruto *
 															pessoa.porcentagemTaxaPassagem
 													)}
@@ -418,7 +418,7 @@
 											<div class="flex justify-between">
 												<span>Ticket Alimentação:</span>
 												<span class="font-medium"
-													>{formatCurrency(
+													>{formatarMoeda(
 														pessoa.valorTicketAlimentacao
 													)}</span
 												>
@@ -452,7 +452,7 @@
 				class="space-y-4"
 				onsubmit={(e) => {
 					e.preventDefault();
-					savePessoa();
+					salvarPessoa();
 				}}
 			>
 				<label class="label">

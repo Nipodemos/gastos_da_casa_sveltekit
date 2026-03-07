@@ -4,6 +4,9 @@ import { DespesaFixa } from '../shared/despesa-fixa.model';
 
 export class DespesasController {
 	@BackendMethod({ allowed: Allow.authenticated })
+	/**
+	 * Garante que as despesas fixas ativas existam no mês informado para o usuário atual.
+	 */
 	static async garantirDespesasFixas(mes: number, ano: number) {
 		const despesaRepo = remult.repo(Despesa);
 		const despesaFixaRepo = remult.repo(DespesaFixa);

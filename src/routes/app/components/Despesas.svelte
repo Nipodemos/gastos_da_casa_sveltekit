@@ -6,6 +6,7 @@
 	import { getContext } from 'svelte';
 
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	let { mesAnoSelecionado, totalDespesas = $bindable(0) } = $props();
 
 	// --- Estado ---
@@ -49,7 +50,7 @@
 	 * Efeito que recarrega os dados sempre que a data selecionada muda.
 	 */
 	$effect(() => {
-		loadData(mesAnoSelecionado);
+		carregarDados(mesAnoSelecionado);
 	});
 
 	/**
@@ -67,7 +68,7 @@
 	 * Também garante que as despesas fixas sejam geradas para o mês.
 	 * @param {string} dateStr - A data no formato 'YYYY-MM'.
 	 */
-	async function loadData(dateStr: string) {
+	async function carregarDados(dateStr: string) {
 		loading = true;
 		try {
 			const [year, month] = dateStr.split('-').map(Number);
@@ -101,12 +102,14 @@
 	 * Navega para o mês anterior ou seguinte.
 	 * @param {number} offset -> -1 para mês anterior, 1 para mês seguinte.
 	 */
-	function changeMonth(offset: number) {
+	function alterarMes(offset: number) {
 		const [year, month] = mesAnoSelecionado.split('-').map(Number);
 		const d = new Date(year, month - 1 + offset, 1);
 		const y = d.getFullYear();
 		const m = String(d.getMonth() + 1).padStart(2, '0');
-		goto(`?date=${y}-${m}`, { noScroll: true });
+		const destino = new URL(resolve('/app'), window.location.origin);
+		destino.searchParams.set('date', `${y}-${m}`);
+		goto(destino, { noScroll: true });
 	}
 
 	/**
@@ -114,7 +117,7 @@
 	 * @param {string} dateString - A data no formato 'YYYY-MM'.
 	 * @returns {string} A data formatada.
 	 */
-	function formatMonthYear(dateString: string): string {
+	function formatarMesEAno(dateString: string): string {
 		const [year, month] = dateString.split('-').map(Number);
 		const date = new Date(year, month - 1, 1);
 		return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(date);
@@ -124,7 +127,7 @@
 	 * Abre o modal para adicionar uma nova despesa.
 	 * Define a data padrão para o primeiro dia do mês selecionado (ou hoje se for o mês atual).
 	 */
-	function openAddDespesa() {
+	function abrirModalNovaDespesa() {
 		editingDespesa = null;
 
 		despesaForm = {
@@ -141,7 +144,7 @@
 	 * Abre o modal para editar uma despesa existente.
 	 * @param {Despesa} despesa - A despesa a ser editada.
 	 */
-	function openEditDespesa(despesa: Despesa) {
+	function abrirModalEditarDespesa(despesa: Despesa) {
 		editingDespesa = despesa;
 		despesaForm = {
 			descricao: despesa.descricao,
@@ -155,7 +158,7 @@
 	/**
 	 * Salva a despesa (nova ou editada) no banco de dados.
 	 */
-	async function saveDespesa() {
+	async function salvarDespesa() {
 		try {
 			const repo = remult.repo(Despesa);
 			// Cria o objeto Date corrigindo a questão do fuso horário (simplificado)
@@ -237,7 +240,7 @@
 	 * Alterna o status de pagamento da despesa.
 	 * @param despesa A despesa a ser alterada.
 	 */
-	async function togglePaga(despesa: Despesa) {
+	async function alternarPagamento(despesa: Despesa) {
 		if (togglingId === despesa.id) return; // Evita duplo clique
 		togglingId = despesa.id;
 
@@ -259,12 +262,12 @@
 	 * Exclui uma despesa após confirmação.
 	 * @param {Despesa} despesa - A despesa a ser excluída.
 	 */
-	async function deleteDespesa(despesa: Despesa) {
+	async function excluirDespesa(despesa: Despesa) {
 		if (!confirm('Tem certeza que deseja excluir esta despesa?')) return;
 
 		const promise = (async () => {
 			await remult.repo(Despesa).delete(despesa.id);
-			await loadData(mesAnoSelecionado);
+			await carregarDados(mesAnoSelecionado);
 		})();
 
 		toaster.promise(promise, {
@@ -279,7 +282,7 @@
 	 * @param {number} value - O valor a ser formatado.
 	 * @returns {string} O valor formatado (ex: R$ 1.234,56).
 	 */
-	function formatCurrency(value: number): string {
+	function formatarMoeda(value: number): string {
 		return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 	}
 </script>
@@ -292,23 +295,23 @@
 			<div class="flex items-center gap-2">
 				<button
 					class="btn-icon btn-icon-sm preset-filled-surface-200-800"
-					onclick={() => changeMonth(-1)}
+					onclick={() => alterarMes(-1)}
 					aria-label="Mês anterior"
 				>
 					<i class="fa-solid fa-chevron-left"></i>
 				</button>
 				<h3 class="min-w-[180px] text-center h3 capitalize">
-					{formatMonthYear(mesAnoSelecionado)}
+					{formatarMesEAno(mesAnoSelecionado)}
 				</h3>
 				<button
 					class="btn-icon btn-icon-sm preset-filled-surface-200-800"
-					onclick={() => changeMonth(1)}
+					onclick={() => alterarMes(1)}
 					aria-label="Mês seguinte"
 				>
 					<i class="fa-solid fa-chevron-right"></i>
 				</button>
 			</div>
-			<button class="btn preset-filled-primary-200-800" onclick={openAddDespesa}>
+			<button class="btn preset-filled-primary-200-800" onclick={abrirModalNovaDespesa}>
 				<i class="fa-solid fa-plus mr-2"></i> Adicionar Despesa
 			</button>
 		</div>
@@ -337,7 +340,7 @@
 				</div>
 			{:else}
 				<div class="space-y-2 p-2 md:space-y-0 md:p-0">
-					{#each despesas as despesa}
+					{#each despesas as despesa (despesa.id)}
 						<div
 							class="md:[&:hover]:preset-tonal-primary-200-800 rounded-container border border-surface-200-800 p-3 odd:bg-surface-100-900 even:bg-surface-200-800 md:grid md:grid-cols-[minmax(0,1fr)_128px_140px_132px] md:items-center md:gap-3 md:rounded-none md:border-0 md:px-4 md:py-3"
 						>
@@ -387,7 +390,7 @@
 									class="text-xs font-medium tracking-wide text-surface-500 uppercase md:hidden"
 									>Valor</span
 								>
-								<span>- {formatCurrency(despesa.valor)}</span>
+								<span>- {formatarMoeda(despesa.valor)}</span>
 							</div>
 
 							<div
@@ -400,7 +403,7 @@
 									title={despesa.paga
 										? 'Marcar como pendente'
 										: 'Marcar como pago'}
-									onclick={() => togglePaga(despesa)}
+									onclick={() => alternarPagamento(despesa)}
 									disabled={togglingId === despesa.id}
 								>
 									{#if togglingId === despesa.id}
@@ -416,7 +419,7 @@
 									class="btn-icon btn-icon-sm preset-filled-primary-300-700"
 									title="Editar"
 									aria-label="Editar"
-									onclick={() => openEditDespesa(despesa)}
+									onclick={() => abrirModalEditarDespesa(despesa)}
 								>
 									<i class="fa-solid fa-pen"></i>
 								</button>
@@ -424,7 +427,7 @@
 									class="btn-icon btn-icon-sm preset-filled-error-300-700"
 									title="Excluir"
 									aria-label="Excluir"
-									onclick={() => deleteDespesa(despesa)}
+									onclick={() => excluirDespesa(despesa)}
 								>
 									<i class="fa-solid fa-trash"></i>
 								</button>
@@ -446,7 +449,7 @@
 				class="space-y-4"
 				onsubmit={(e) => {
 					e.preventDefault();
-					saveDespesa();
+					salvarDespesa();
 				}}
 			>
 				<label class="label">

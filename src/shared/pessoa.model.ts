@@ -1,5 +1,5 @@
 import { Entity, Fields, Validators } from 'remult';
-import { calculateInssValue } from '$lib/utils/inss';
+import { calcularValorInss } from '$lib/utils/inss';
 import { aplicarOpcoesDeEntidadeDoUsuario } from './entidade-do-usuario';
 
 @Entity<Pessoa>('pessoas', (options) => {
@@ -61,7 +61,7 @@ export class Pessoa {
 	// @Fields.number({ allowApiUpdate: false, validate: Validators.min(0) })
 	get salarioLiquido(): number {
 		const baseCalculo = this.salarioBruto || 0;
-		const valorInss = calculateInssValue(baseCalculo, this.clt);
+		const valorInss = calcularValorInss(baseCalculo, this.clt);
 		const descontoAlimentacao = baseCalculo * (this.porcentagemTaxaAlimentacao || 0);
 		const descontoPassagem = baseCalculo * (this.porcentagemTaxaPassagem || 0);
 

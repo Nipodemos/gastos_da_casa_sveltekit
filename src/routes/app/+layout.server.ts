@@ -1,9 +1,14 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 
-export const load = (async ({ locals }) => {
+/**
+ * Protege as rotas internas da aplicação contra acesso sem autenticação.
+ */
+const carregarLayoutDoApp: LayoutServerLoad = async ({ locals }) => {
 	if (!locals.logado) {
 		throw redirect(303, `/`);
 	}
-	return { usuario: locals.usuario };
-}) satisfies LayoutServerLoad;
+	return {};
+};
+
+export const load = carregarLayoutDoApp;

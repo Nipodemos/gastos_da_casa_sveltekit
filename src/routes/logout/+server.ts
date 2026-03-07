@@ -1,7 +1,12 @@
 import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const POST: RequestHandler = async ({ cookies }) => {
+/**
+ * Encerra a sessão atual removendo o cookie autenticado.
+ */
+const encerrarSessao: RequestHandler = async ({ cookies }) => {
 	cookies.delete('session_token', { path: '/' });
 	throw redirect(303, '/');
 };
+
+export const POST = encerrarSessao;

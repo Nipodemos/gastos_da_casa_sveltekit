@@ -2,8 +2,6 @@
 	import type { PageProps } from './$types';
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
-	import { getContext } from 'svelte';
-	import type { createToaster } from '@skeletonlabs/skeleton-svelte';
 
 	let { form }: PageProps = $props();
 	let formulario = $state({
@@ -11,51 +9,17 @@
 	});
 	let submitting = $state(false);
 
-	const toaster: ReturnType<typeof createToaster> = getContext('toaster');
-
 	/**
-	 * Cria o manipulador do formulário de login com feedback visual por toast.
+	 * Cria o manipulador do formulário de login com feedback visual inline.
 	 */
 	const criarManipuladorDeLogin: SubmitFunction = () => {
-		return async ({ result, update }) => {
-			submitting = true;
+		submitting = true;
 
-			const promise = (async () => {
-				if (result.type === 'failure') {
-					throw result.data?.error || 'Erro desconhecido';
-				} else if (result.type === 'redirect' || result.type === 'success') {
-					// Sucesso
-					return;
-				} else {
-					// Outros casos (error, etc)
-					throw 'Erro inesperado';
-				}
-			})();
-
-			toaster.promise(promise, {
-				loading: {
-					description: 'Verificando credenciais...',
-					meta: {
-						icon: 'fa-solid fa-spinner fa-spin'
-					}
-				},
-				success: {
-					description: 'Login realizado com sucesso!',
-					meta: { icon: 'fa-solid fa-check' }
-				},
-				error: {
-					description: 'Erro ao entrar.',
-					meta: { icon: 'fa-solid fa-exclamation' }
-				}
-			});
-
+		return async ({ update }) => {
 			try {
-				await promise;
-			} catch {
-				// O toaster.promise já lida com o erro visualmente
+				await update();
 			} finally {
 				submitting = false;
-				await update();
 			}
 		};
 	};
@@ -69,7 +33,7 @@
 			<h1 class="h2 font-bold">Bem-vindo</h1>
 			<p class="text-surface-600-400">Digite sua senha para entrar no seu espaço</p>
 			<p class="text-sm text-surface-500">
-				Se essa senha ainda não existir, uma conta nova será criada sem tela de cadastro.
+				Use a senha de um usuário existente ou a senha administrativa definida no `.env`.
 			</p>
 		</div>
 
@@ -93,7 +57,16 @@
 				{submitting ? 'Entrando...' : 'Entrar'}
 			</button>
 
-			{#if form?.error}
+			{#if submitting}
+				<div
+					class="alert rounded-container preset-tonal-primary p-4 text-center text-sm text-surface-700-300"
+				>
+					<p class="flex items-center justify-center gap-2">
+						<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+						<span>Verificando credenciais...</span>
+					</p>
+				</div>
+			{:else if form?.error}
 				<div class="alert rounded-container preset-tonal-error p-4 text-center">
 					<p>{form.error}</p>
 				</div>

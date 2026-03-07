@@ -20,7 +20,7 @@ function buscarComCredenciais(
  */
 const carregarLayoutCliente: LayoutLoad = (event) => {
 	remult.useFetch((input, init) => buscarComCredenciais(event, input, init));
-	return { logado: event.data.logado };
+	return {};
 };
 
 export const load = carregarLayoutCliente;

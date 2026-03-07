@@ -1,15 +1,14 @@
 import { sequence } from '@sveltejs/kit/hooks';
+import { remult } from 'remult';
 import { api as handleRemult } from './server/api';
-import { obterUsuarioDaSessao } from './server/auth';
 import type { Handle } from '@sveltejs/kit';
 
 /**
- * Valida a sessão atual e marca apenas o estado de autenticação no `locals`.
+ * Usa o contexto do Remult para refletir no `locals` se a request atual está autenticada.
  */
 const autenticarSessao: Handle = async ({ event, resolve }) => {
-	const token = event.cookies.get('session_token');
-	event.locals.logado = Boolean(obterUsuarioDaSessao(token)?.id);
+	event.locals.logado = remult.authenticated();
 	return resolve(event);
 };
 
-export const handle = sequence(autenticarSessao, handleRemult);
+export const handle = sequence(handleRemult, autenticarSessao);

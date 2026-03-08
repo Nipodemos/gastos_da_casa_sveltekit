@@ -2,6 +2,14 @@ import { Allow, BackendMethod, remult } from 'remult';
 import { Despesa } from '../shared/despesa.model';
 import { DespesaFixa } from '../shared/despesa-fixa.model';
 
+function dataPertenceAoMesAno(data: Date | undefined, mes: number, ano: number) {
+	if (!(data instanceof Date) || Number.isNaN(data.getTime())) {
+		return false;
+	}
+
+	return data.getUTCFullYear() === ano && data.getUTCMonth() === mes - 1;
+}
+
 export class DespesasController {
 	@BackendMethod({ allowed: Allow.authenticated })
 	/**
@@ -14,9 +22,7 @@ export class DespesasController {
 		// 1. Buscar todas as despesas fixas ativas
 		const fixas = await despesaFixaRepo.find({ where: { ativa: true } });
 
-		// 2. Definir o intervalo do mês
-		// 2. Definir o intervalo do mês em UTC para evitar problemas de fuso horário
-		const inicioMes = new Date(Date.UTC(ano, mes - 1, 1));
+		// 2. Definir o último instante do mês em UTC para validar a data de início da fixa
 		const fimMes = new Date(Date.UTC(ano, mes, 0, 23, 59, 59, 999));
 		for (const fixa of fixas) {
 			// Verificar se a despesa fixa começou antes ou durante este mês
@@ -24,12 +30,16 @@ export class DespesasController {
 				continue;
 			}
 
-			// 3. Verificar se já existe uma despesa gerada para esta fixa neste mês
-			// Importante: Buscamos inclusive as excluídas (soft delete) para não recriar
-			const existente = await despesaRepo.findFirst({
-				despesaFixaId: fixa.id,
-				data: { $gte: inicioMes, $lte: fimMes }
+			// 3. Verificar se já existe uma despesa gerada para esta fixa neste mês.
+			// Buscamos inclusive as excluídas (soft delete) para não recriar.
+			const despesasDaFixa = await despesaRepo.find({
+				where: {
+					despesaFixaId: fixa.id
+				}
 			});
+			const existente = despesasDaFixa.find((despesa) =>
+				dataPertenceAoMesAno(despesa.data, mes, ano)
+			);
 
 			if (!existente) {
 				// 4. Se não existe, criar
@@ -52,5 +62,22 @@ export class DespesasController {
 				});
 			}
 		}
+	}
+
+	@BackendMethod({ allowed: Allow.authenticated })
+	static async listarDespesasDoMes(mes: number, ano: number) {
+		const despesas = await remult.repo(Despesa).find({
+			where: {
+				excluida: false
+			}
+		});
+
+		return despesas
+			.filter((despesa) => dataPertenceAoMesAno(despesa.data, mes, ano))
+			.sort((a, b) =>
+				a.descricao.localeCompare(b.descricao, 'pt-BR', {
+					sensitivity: 'base'
+				})
+			);
 	}
 }

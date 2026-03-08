@@ -76,19 +76,8 @@
 			// Garante que as despesas fixas sejam geradas para este mês
 			await DespesasController.garantirDespesasFixas(month, year);
 
-			// Cria datas em UTC para garantir que cobrimos o mês inteiro independentemente do fuso horário
-			const startOfMonth = new Date(Date.UTC(year, month - 1, 1));
-			const endOfMonth = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
-			const opcoesBusca = {
-				where: {
-					data: { $gte: startOfMonth, $lte: endOfMonth },
-					excluida: false
-				},
-				orderBy: { descricao: 'asc' as const }
-			};
-
-			// Busca as despesas no banco de dados
-			despesas = await remult.repo(Despesa).find(opcoesBusca);
+			// Busca as despesas do mês no backend para evitar divergências no filtro de `dateOnly`
+			despesas = await DespesasController.listarDespesasDoMes(month, year);
 		} catch (error) {
 			console.error('Erro ao carregar despesas:', error);
 			toaster.create({ description: 'Erro ao carregar dados.', type: 'error' });

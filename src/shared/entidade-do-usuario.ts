@@ -26,22 +26,8 @@ export function aplicarOpcoesDeEntidadeDoUsuario<
 	) => Promise<void> | void
 ) {
 	opcoes.allowApiCrud = Allow.authenticated;
-	opcoes.apiPrefilter = () => {
-		const filtro = criarFiltroPorUsuario();
-		console.log('[remult][prefilter][api]', {
-			user: remult.user,
-			filtro
-		});
-		return filtro as EntityFilter<tipoEntidade>;
-	};
-	opcoes.backendPrefilter = () => {
-		const filtro = criarFiltroPorUsuario();
-		console.log('[remult][prefilter][backend]', {
-			user: remult.user,
-			filtro
-		});
-		return filtro as EntityFilter<tipoEntidade>;
-	};
+	opcoes.apiPrefilter = () => criarFiltroPorUsuario() as EntityFilter<tipoEntidade>;
+	opcoes.backendPrefilter = () => criarFiltroPorUsuario() as EntityFilter<tipoEntidade>;
 	opcoes.saving = async (entidade, evento) => {
 		const idUsuarioAtual = remult.user?.id;
 		if (idUsuarioAtual) {

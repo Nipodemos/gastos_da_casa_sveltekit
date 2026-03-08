@@ -87,20 +87,8 @@
 				orderBy: { descricao: 'asc' as const }
 			};
 
-			console.log('[despesas][client] antes do find()', {
-				dateStr,
-				user: remult.user,
-				opcoesBusca
-			});
-
 			// Busca as despesas no banco de dados
 			despesas = await remult.repo(Despesa).find(opcoesBusca);
-
-			console.log('[despesas][client] resultado do find()', {
-				quantidade: despesas.length,
-				ids: despesas.map((despesa) => despesa.id),
-				user: remult.user
-			});
 		} catch (error) {
 			console.error('Erro ao carregar despesas:', error);
 			toaster.create({ description: 'Erro ao carregar dados.', type: 'error' });

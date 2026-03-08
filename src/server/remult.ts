@@ -17,14 +17,6 @@ interface DadosJWT {
 	};
 }
 
-Remult.onFind = (metadata, options) => {
-	console.log('[remult][server][find]', {
-		entity: metadata.key,
-		options,
-		user: remult.user
-	});
-};
-
 async function usuarioPodeAcessarAdmin(usuarioId: string) {
 	if (!SENHA_LOGIN) {
 		return false;
@@ -68,11 +60,6 @@ export const remultServer = remultApi({
 			const usuario = (payload as DadosJWT).user;
 			const roles =
 				usuario.isAdmin || (await usuarioPodeAcessarAdmin(usuario.id)) ? ['admin'] : [];
-
-			console.log('[auth][server][getUser]', {
-				usuarioDoToken: usuario,
-				roles
-			});
 
 			return {
 				id: usuario.id,

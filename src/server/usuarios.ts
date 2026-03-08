@@ -2,10 +2,7 @@ import type { RequestEvent } from '@sveltejs/kit';
 import { remult } from 'remult';
 import { Usuario } from '$shared/usuario.model';
 import { remultServer } from './remult';
-import {
-	codigoDeAcessoEhSenhaBootstrapDoAdmin,
-	verificarCodigoDeAcesso
-} from './auth';
+import { codigoDeAcessoEhSenhaBootstrapDoAdmin, verificarCodigoDeAcesso } from './auth';
 
 export interface AuthenticatedUser {
 	id: string;

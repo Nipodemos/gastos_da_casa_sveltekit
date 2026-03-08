@@ -6,12 +6,8 @@
 	let { children }: LayoutProps = $props();
 
 	onMount(async () => {
-		console.log('[client] remult.user antes do initUser()', remult.user);
-
 		try {
-			const usuario = await remult.initUser();
-			console.log('[client] remult.user depois do initUser()', remult.user);
-			console.log('[client] usuario retornado por initUser()', usuario);
+			await remult.initUser();
 		} catch (error) {
 			console.error('[client] falha ao inicializar remult.user', error);
 		}

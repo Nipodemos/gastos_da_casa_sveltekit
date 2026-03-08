@@ -3,8 +3,6 @@ import { remult } from 'remult';
 import { Usuario } from '$shared/usuario.model';
 import { api } from './api';
 import {
-	ID_USUARIO_ADMIN_BOOTSTRAP,
-	NOME_USUARIO_ADMIN_BOOTSTRAP,
 	codigoDeAcessoEhSenhaBootstrapDoAdmin,
 	verificarCodigoDeAcesso
 } from './auth';
@@ -43,14 +41,6 @@ export async function autenticarComCodigoDeAcesso(
 				id: usuarioExistente.id,
 				name: usuarioExistente.nome,
 				isAdmin: senhaEhAdminBootstrap
-			};
-		}
-
-		if (senhaEhAdminBootstrap) {
-			return {
-				id: ID_USUARIO_ADMIN_BOOTSTRAP,
-				name: NOME_USUARIO_ADMIN_BOOTSTRAP,
-				isAdmin: true
 			};
 		}
 

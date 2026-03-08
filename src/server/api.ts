@@ -7,10 +7,7 @@ import { entities } from '$shared/entities';
 
 import { DespesasController } from './despesas.controller';
 import { dataProvider, tursoClient } from './database';
-import {
-	usuarioEhAdminBootstrap,
-	verificarCodigoDeAcesso
-} from './auth';
+import { verificarCodigoDeAcesso } from './auth';
 
 interface DadosJWT {
 	user: {
@@ -29,10 +26,6 @@ Remult.onFind = (metadata, options) => {
 };
 
 async function usuarioPodeAcessarAdmin(usuarioId: string) {
-	if (usuarioEhAdminBootstrap(usuarioId)) {
-		return true;
-	}
-
 	if (!SENHA_LOGIN) {
 		return false;
 	}
@@ -75,6 +68,11 @@ export const api = remultApi({
 			const usuario = (payload as DadosJWT).user;
 			const roles =
 				usuario.isAdmin || (await usuarioPodeAcessarAdmin(usuario.id)) ? ['admin'] : [];
+
+			console.log('[auth][server][getUser]', {
+				usuarioDoToken: usuario,
+				roles
+			});
 
 			return {
 				id: usuario.id,

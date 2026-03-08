@@ -1,7 +1,7 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { remult } from 'remult';
 import { Usuario } from '$shared/usuario.model';
-import { api } from './api';
+import { remultServer } from './remult';
 import {
 	codigoDeAcessoEhSenhaBootstrapDoAdmin,
 	verificarCodigoDeAcesso
@@ -24,7 +24,7 @@ export async function autenticarComCodigoDeAcesso(
 		return null;
 	}
 
-	return api.withRemult(event, async () => {
+	return remultServer.withRemult(event, async () => {
 		const repositorioDeUsuarios = remult.repo(Usuario);
 		const usuarios = await repositorioDeUsuarios.find({
 			orderBy: {

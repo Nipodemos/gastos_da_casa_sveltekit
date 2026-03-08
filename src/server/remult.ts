@@ -47,7 +47,7 @@ async function usuarioPodeAcessarAdmin(usuarioId: string) {
  * Resolve o usuário autenticado a partir do cookie da requisição atual.
  */
 
-export const api = remultApi({
+export const remultServer = remultApi({
 	controllers: [DespesasController],
 	entities,
 	dataProvider,

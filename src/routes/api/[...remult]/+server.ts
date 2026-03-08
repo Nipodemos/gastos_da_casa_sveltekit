@@ -1,3 +1,3 @@
-import { api } from '../../../server/api';
+import { remultServer } from '../../../server/remult';
 
-export const { GET, POST, PUT, DELETE } = api;
+export const { GET, POST, PUT, DELETE } = remultServer;

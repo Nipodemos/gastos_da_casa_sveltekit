@@ -1,3 +1,3 @@
-import { api as handleRemult } from './server/api';
+import { remultServer as handleRemult } from './server/remult';
 
 export const handle = handleRemult;

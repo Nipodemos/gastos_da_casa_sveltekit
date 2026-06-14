@@ -9,6 +9,9 @@
 	import { resolve } from '$app/paths';
 	let { mesAnoSelecionado, totalDespesas = $bindable(0) } = $props();
 
+	type TipoDespesa = 'unica' | 'parcelada';
+	type ModoValorParcelado = 'total' | 'parcela';
+
 	// --- Estado ---
 
 	/** Lista de despesas do mês selecionado */
@@ -42,6 +45,15 @@
 		valor: 0,
 		data: new Date().toISOString().slice(0, 10),
 		paga: false
+	});
+
+	let tipoDespesa: TipoDespesa = $state('unica');
+	let parcelamentoForm: {
+		quantidade: number;
+		modoValor: ModoValorParcelado;
+	} = $state({
+		quantidade: 2,
+		modoValor: 'total'
 	});
 
 	// --- Efeitos ---
@@ -119,6 +131,11 @@
 	 */
 	function abrirModalNovaDespesa() {
 		editingDespesa = null;
+		tipoDespesa = 'unica';
+		parcelamentoForm = {
+			quantidade: 2,
+			modoValor: 'total'
+		};
 
 		despesaForm = {
 			descricao: '',
@@ -136,6 +153,11 @@
 	 */
 	function abrirModalEditarDespesa(despesa: Despesa) {
 		editingDespesa = despesa;
+		tipoDespesa = 'unica';
+		parcelamentoForm = {
+			quantidade: 2,
+			modoValor: 'total'
+		};
 		despesaForm = {
 			descricao: despesa.descricao,
 			valor: despesa.valor,
@@ -145,6 +167,39 @@
 		showDespesaModal = true;
 	}
 
+	function capitalizarDescricao(descricao: string) {
+		return descricao.charAt(0).toUpperCase() + descricao.slice(1);
+	}
+
+	function criarDataDaParcela(dataInicial: string, indiceParcela: number) {
+		const [ano, mes] = dataInicial.split('-').map(Number);
+		return new Date(ano, mes - 1 + indiceParcela);
+	}
+
+	function formatarSequenciaParcela(indiceParcela: number, totalParcelas: number) {
+		const tamanho = Math.max(2, String(totalParcelas).length);
+		const parcela = String(indiceParcela + 1).padStart(tamanho, '0');
+		const total = String(totalParcelas).padStart(tamanho, '0');
+		return `${parcela}/${total}`;
+	}
+
+	function calcularValoresDasParcelas() {
+		const quantidade = Math.max(1, Math.trunc(parcelamentoForm.quantidade || 1));
+		const valorEmCentavos = Math.round((despesaForm.valor || 0) * 100);
+
+		if (parcelamentoForm.modoValor === 'parcela') {
+			return Array.from({ length: quantidade }, () => valorEmCentavos / 100);
+		}
+
+		const valorBase = Math.floor(valorEmCentavos / quantidade);
+		const resto = valorEmCentavos % quantidade;
+
+		return Array.from({ length: quantidade }, (_, indice) => {
+			const ajuste = indice < resto ? 1 : 0;
+			return (valorBase + ajuste) / 100;
+		});
+	}
+
 	/**
 	 * Salva a despesa (nova ou editada) no banco de dados.
 	 */
@@ -152,12 +207,10 @@
 		try {
 			const repo = remult.repo(Despesa);
 			// Cria o objeto Date corrigindo a questão do fuso horário (simplificado)
-			const [y, m] = despesaForm.data.split('-').map(Number);
-			const dateObj = new Date(y, m - 1);
+			const dateObj = criarDataDaParcela(despesaForm.data, 0);
 
 			//capitalizar primeira letra da descrição antes de salvar
-			despesaForm.descricao =
-				despesaForm.descricao.charAt(0).toUpperCase() + despesaForm.descricao.slice(1);
+			despesaForm.descricao = capitalizarDescricao(despesaForm.descricao);
 
 			const promise = (async () => {
 				if (editingDespesa) {
@@ -179,15 +232,44 @@
 						despesas = despesas.filter((d) => d.id !== editingDespesa!.id);
 					}
 				} else {
-					const newDespesa = await repo.insert({
-						...despesaForm,
-						data: dateObj,
-						excluida: false
-					});
+					if (tipoDespesa === 'parcelada') {
+						const quantidadeParcelas = Math.max(
+							1,
+							Math.trunc(parcelamentoForm.quantidade || 1)
+						);
+						const valoresParcelas = calcularValoresDasParcelas();
+						const novasDespesas = await Promise.all(
+							valoresParcelas.map((valor, indice) =>
+								repo.insert({
+									...despesaForm,
+									descricao: `${despesaForm.descricao} ${formatarSequenciaParcela(
+										indice,
+										quantidadeParcelas
+									)}`,
+									valor,
+									data: criarDataDaParcela(despesaForm.data, indice),
+									excluida: false
+								})
+							)
+						);
 
-					// Verifica se a nova despesa pertence ao mês selecionado
-					if (despesaForm.data.startsWith(mesAnoSelecionado)) {
-						despesas = [...despesas, newDespesa];
+						despesas = [
+							...despesas,
+							...novasDespesas.filter((despesa) =>
+								new Date(despesa.data).toISOString().startsWith(mesAnoSelecionado)
+							)
+						];
+					} else {
+						const newDespesa = await repo.insert({
+							...despesaForm,
+							data: dateObj,
+							excluida: false
+						});
+
+						// Verifica se a nova despesa pertence ao mês selecionado
+						if (despesaForm.data.startsWith(mesAnoSelecionado)) {
+							despesas = [...despesas, newDespesa];
+						}
 					}
 				}
 
@@ -456,6 +538,48 @@
 						required
 					/>
 				</label>
+
+				{#if !editingDespesa}
+					<div class="space-y-3">
+						<div class="grid grid-cols-2 gap-2">
+							<label
+								class="flex cursor-pointer items-center gap-2 rounded border border-surface-300 p-3"
+							>
+								<input type="radio" bind:group={tipoDespesa} value="unica" />
+								<span>Única</span>
+							</label>
+							<label
+								class="flex cursor-pointer items-center gap-2 rounded border border-surface-300 p-3"
+							>
+								<input type="radio" bind:group={tipoDespesa} value="parcelada" />
+								<span>Parcelada</span>
+							</label>
+						</div>
+
+						{#if tipoDespesa === 'parcelada'}
+							<label class="label">
+								<span>O valor informado é</span>
+								<select class="select" bind:value={parcelamentoForm.modoValor}>
+									<option value="total">Valor total</option>
+									<option value="parcela">Valor de cada parcela</option>
+								</select>
+							</label>
+
+							<label class="label">
+								<span>Quantidade de parcelas</span>
+								<input
+									class="input"
+									type="number"
+									min="2"
+									step="1"
+									bind:value={parcelamentoForm.quantidade}
+									required
+								/>
+							</label>
+						{/if}
+					</div>
+				{/if}
+
 				<label class="label">
 					<span>Data</span>
 					<input class="input" type="month" bind:value={despesaForm.data} required />

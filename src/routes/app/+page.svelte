@@ -83,7 +83,8 @@
 		const footer = `
 *Despesas da Casa*: ${formatarMoeda(totalDespesas)}
 *Receita da Casa (Total Pessoas)*: ${formatarMoeda(receitaTotal)}
-*Contribuição sobre Renda*: ${formatarPercentual(averageContribution)}`;
+*Contribuição sobre Renda*: ${formatarPercentual(averageContribution)}
+Enviar para Banco Inter`;
 
 		const textToCopy = `${header}\n\n${body}${footer}`;
 

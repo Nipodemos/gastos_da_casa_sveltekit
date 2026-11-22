@@ -1,26 +1,30 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
 	import type { PessoaCalculada } from '$lib/types';
+	import type { PageProps } from './$types';
 	import Despesas from './components/Despesas.svelte';
 	import Pessoas from './components/Pessoas.svelte';
 
-	// --- Estado Derivado (URL) ---
+	let { data }: PageProps = $props();
+
+	// --- Estado Derivado (SSR + URL) ---
 
 	/**
-	 * A data selecionada obtida da URL (query param 'date').
-	 * Se não houver, usa o mês atual.
+	 * A data selecionada resolvida pelo load do servidor (query param 'date' ou mês atual).
 	 */
-	let mesAnoSelecionado: string = $derived(
-		page.url.searchParams.get('date') || new Date().toISOString().slice(0, 7)
-	);
+	let mesAnoSelecionado: string = $derived(data.mesAnoSelecionado);
 
 	/**
-	 * O total das despesas, calculado pelo componente Despesas.
+	 * O total das despesas, inicializado do SSR e mantido sincronizado pelo componente Despesas.
 	 * Passado para o componente Pessoas para cálculo de contribuição.
 	 */
-	let totalDespesas: number = $state(0);
+	let totalDespesas: number = $derived(
+		(data.despesasJson as Array<{ valor?: number }>).reduce(
+			(acc, d) => acc + (d.valor ?? 0),
+			0
+		)
+	);
 
 	/**
 	 * A média de contribuição, calculada pelo componente Pessoas.
@@ -164,9 +168,15 @@ Enviar para Banco Inter`;
 	<!-- Main Content Grid -->
 	<div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
 		<!-- Left Column: Expenses List (Takes up 2/3 on large screens) -->
-		<Despesas {mesAnoSelecionado} bind:totalDespesas />
+		<Despesas {mesAnoSelecionado} despesasIniciais={data.despesasJson} bind:totalDespesas />
 
 		<!-- Right Column: People & Contribution (Takes up 1/3 on large screens) -->
-		<Pessoas {totalDespesas} bind:averageContribution bind:pessoasInfo bind:receitaTotal />
+		<Pessoas
+			{totalDespesas}
+			pessoasIniciais={data.pessoasJson}
+			bind:averageContribution
+			bind:pessoasInfo
+			bind:receitaTotal
+		/>
 	</div>
 </div>

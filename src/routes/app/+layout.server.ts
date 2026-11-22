@@ -9,7 +9,9 @@ const carregarLayoutDoApp: LayoutServerLoad = async () => {
 	if (!remult.authenticated()) {
 		throw redirect(303, `/`);
 	}
-	return {};
+	return {
+		isAdmin: remult.isAllowed('admin')
+	};
 };
 
 export const load = carregarLayoutDoApp;

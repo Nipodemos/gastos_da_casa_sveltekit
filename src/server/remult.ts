@@ -1,13 +1,13 @@
+import { building, dev } from '$app/environment';
 import type { RequestEvent } from '@sveltejs/kit';
 import { remultApi } from 'remult/remult-sveltekit';
-import { Remult, remult, type UserInfo } from 'remult';
+import type { UserInfo } from 'remult';
 import jwt from 'jsonwebtoken';
-import { AUTH_SECRET, SENHA_LOGIN } from '$env/static/private';
+import { AUTH_SECRET } from '$env/static/private';
 import { entities } from '$shared/entities';
 
 import { DespesasController } from './despesas.controller';
-import { dataProvider, tursoClient } from './database';
-import { verificarCodigoDeAcesso } from './auth';
+import { dataProvider } from './database';
 
 interface DadosJWT {
 	user: {
@@ -17,32 +17,15 @@ interface DadosJWT {
 	};
 }
 
-async function usuarioPodeAcessarAdmin(usuarioId: string) {
-	if (!SENHA_LOGIN) {
-		return false;
-	}
-
-	const resultado = await tursoClient.execute({
-		sql: 'SELECT senhaHash FROM usuarios WHERE id = ? LIMIT 1',
-		args: [usuarioId]
-	});
-
-	const senhaHash = resultado.rows[0]?.senhaHash;
-	if (typeof senhaHash !== 'string') {
-		return false;
-	}
-
-	return verificarCodigoDeAcesso(SENHA_LOGIN, senhaHash);
-}
-
 /**
- * Resolve o usuário autenticado a partir do cookie da requisição atual.
+ * Resolve o usuário autenticado a partir do cookie JWT da requisição atual,
+ * sem consultas extras ao banco ou recomputação de hash a cada request.
  */
-
 export const remultServer = remultApi({
 	controllers: [DespesasController],
 	entities,
 	dataProvider,
+	ensureSchema: dev || building,
 	admin: 'admin',
 
 	getUser: async function (event: RequestEvent): Promise<UserInfo | undefined> {
@@ -58,13 +41,11 @@ export const remultServer = remultApi({
 			}
 
 			const usuario = (payload as DadosJWT).user;
-			const roles =
-				usuario.isAdmin || (await usuarioPodeAcessarAdmin(usuario.id)) ? ['admin'] : [];
 
 			return {
 				id: usuario.id,
 				name: usuario.name,
-				roles
+				roles: usuario.isAdmin ? ['admin'] : []
 			};
 		} catch {
 			return undefined;

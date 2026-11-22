@@ -1,8 +1,14 @@
 import { SENHA_LOGIN } from '$env/static/private';
-import { scryptSync, timingSafeEqual } from 'node:crypto';
+import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 
 export const ID_USUARIO_ADMIN_BOOTSTRAP = '__admin_env__';
 export const NOME_USUARIO_ADMIN_BOOTSTRAP = 'Administrador';
+
+export function gerarHashCodigoDeAcesso(codigoDeAcesso: string) {
+	const salt = randomBytes(16).toString('hex');
+	const hash = scryptSync(codigoDeAcesso, salt, 64).toString('hex');
+	return `${salt}:${hash}`;
+}
 
 export function verificarCodigoDeAcesso(codigoDeAcesso: string, hashArmazenado: string) {
 	const [salt, hash] = hashArmazenado.split(':');

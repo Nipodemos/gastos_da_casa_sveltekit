@@ -13,15 +13,22 @@
 	 */
 	let {
 		totalDespesas,
+		pessoasIniciais = [],
 		averageContribution = $bindable(0),
 		pessoasInfo = $bindable([]),
 		receitaTotal = $bindable(0)
+	}: {
+		totalDespesas: number;
+		pessoasIniciais?: unknown[];
+		averageContribution?: number;
+		pessoasInfo?: PessoaCalculada[];
+		receitaTotal?: number;
 	} = $props();
 
 	// --- Estado ---
 
-	/** Lista de pessoas cadastradas */
-	let pessoas: Pessoa[] = $state([]);
+	/** Lista de pessoas cadastradas (hidratada do SSR e atualizável localmente) */
+	let pessoas: Pessoa[] = $derived(remult.repo(Pessoa).fromJson(pessoasIniciais));
 
 	/** Indica se os dados estão sendo carregados */
 	let loading: boolean = $state(false);
@@ -89,13 +96,6 @@
 	// --- Efeitos ---
 
 	/**
-	 * Efeito que carrega os dados ao montar o componente.
-	 */
-	$effect(() => {
-		carregarDados();
-	});
-
-	/**
 	 * Efeito que calcula a média de contribuição e atualiza a prop `averageContribution`.
 	 */
 	$effect(() => {
@@ -108,25 +108,6 @@
 		pessoasInfo = pessoasCalculadas;
 		receitaTotal = totalReceita;
 	});
-
-	// --- Carregamento de Dados ---
-
-	/**
-	 * Carrega a lista de pessoas do banco de dados.
-	 */
-	async function carregarDados() {
-		loading = true;
-		try {
-			pessoas = await remult.repo(Pessoa).find({
-				orderBy: { nome: 'asc' }
-			});
-		} catch (error) {
-			console.error('Erro ao carregar pessoas:', error);
-			alert('Erro ao carregar dados.');
-		} finally {
-			loading = false;
-		}
-	}
 
 	// --- Ações ---
 
@@ -175,22 +156,16 @@
 			const promise = (async () => {
 				if (editingPessoa) {
 					const updatedPessoa = await repo.update(editingPessoa.id, { ...pessoaForm });
-					// Atualiza no array local
-					const index = pessoas.findIndex((p) => p.id === editingPessoa!.id);
-					if (index !== -1) {
-						pessoas[index] = updatedPessoa;
-					}
+					pessoas = pessoas.map((p) => (p.id === editingPessoa!.id ? updatedPessoa : p));
 				} else {
 					const newPessoa = await repo.insert({ ...pessoaForm });
 					pessoas = [...pessoas, newPessoa];
 				}
 
 				// Ordena por nome
-				pessoas.sort((a, b) =>
-					a.nome.localeCompare(b.nome, 'en', {
-						sensitivity: 'variant',
-						caseFirst: 'upper',
-						numeric: false
+				pessoas = [...pessoas].sort((a, b) =>
+					a.nome.localeCompare(b.nome, 'pt-BR', {
+						sensitivity: 'base'
 					})
 				);
 

@@ -7,17 +7,25 @@
 
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	let { mesAnoSelecionado, totalDespesas = $bindable(0) } = $props();
+	let {
+		mesAnoSelecionado,
+		despesasIniciais = [],
+		totalDespesas = $bindable(0)
+	}: {
+		mesAnoSelecionado: string;
+		despesasIniciais?: unknown[];
+		totalDespesas?: number;
+	} = $props();
 
 	type TipoDespesa = 'unica' | 'parcelada';
 	type ModoValorParcelado = 'total' | 'parcela';
 
 	// --- Estado ---
 
-	/** Lista de despesas do mês selecionado */
-	let despesas: Despesa[] = $state([]);
+	/** Lista de despesas do mês selecionado (hidratada do SSR e atualizável localmente) */
+	let despesas: Despesa[] = $derived(remult.repo(Despesa).fromJson(despesasIniciais));
 
-	/** Indica se os dados estão sendo carregados */
+	/** Indica se os dados estão sendo recarregados manualmente */
 	let loading: boolean = $state(false);
 
 	/** ID da despesa que está sendo alterada (para loading no botão) */
@@ -59,13 +67,6 @@
 	// --- Efeitos ---
 
 	/**
-	 * Efeito que recarrega os dados sempre que a data selecionada muda.
-	 */
-	$effect(() => {
-		carregarDados(mesAnoSelecionado);
-	});
-
-	/**
 	 * Efeito que recalcula o total de despesas sempre que a lista de despesas muda.
 	 * Atualiza a prop `totalDespesas` para que o componente pai tenha acesso ao valor.
 	 */
@@ -76,20 +77,14 @@
 	// --- Carregamento de Dados ---
 
 	/**
-	 * Carrega as despesas para o mês e ano especificados.
-	 * Também garante que as despesas fixas sejam geradas para o mês.
+	 * Recarrega as despesas para o mês e ano especificados em uma única chamada ao backend.
 	 * @param {string} dateStr - A data no formato 'YYYY-MM'.
 	 */
 	async function carregarDados(dateStr: string) {
 		loading = true;
 		try {
 			const [year, month] = dateStr.split('-').map(Number);
-
-			// Garante que as despesas fixas sejam geradas para este mês
-			await DespesasController.garantirDespesasFixas(month, year);
-
-			// Busca as despesas do mês no backend para evitar divergências no filtro de `dateOnly`
-			despesas = await DespesasController.listarDespesasDoMes(month, year);
+			despesas = await DespesasController.carregarDespesasDoMes(month, year);
 		} catch (error) {
 			console.error('Erro ao carregar despesas:', error);
 			toaster.create({ description: 'Erro ao carregar dados.', type: 'error' });
@@ -221,12 +216,11 @@
 
 					// Verifica se a despesa ainda pertence ao mês selecionado
 					if (despesaForm.data.startsWith(mesAnoSelecionado)) {
-						// Atualiza no array local
-						const index = despesas.findIndex((d) => d.id === editingDespesa!.id);
-						if (index !== -1) {
-							// Forçamos o type casting ou ordem correta para garantir que 'data' seja Date
-							despesas[index] = { ...despesas[index], ...despesaForm, data: dateObj };
-						}
+						despesas = despesas.map((d) =>
+							d.id === editingDespesa!.id
+								? { ...d, ...despesaForm, data: dateObj }
+								: d
+						);
 					} else {
 						// Se mudou de mês, remove do array local
 						despesas = despesas.filter((d) => d.id !== editingDespesa!.id);
@@ -274,11 +268,9 @@
 				}
 
 				// Ordena as despesas por descricao
-				despesas.sort((a, b) =>
-					a.descricao.localeCompare(b.descricao, 'en', {
-						sensitivity: 'variant',
-						caseFirst: 'upper',
-						numeric: false
+				despesas = [...despesas].sort((a, b) =>
+					a.descricao.localeCompare(b.descricao, 'pt-BR', {
+						sensitivity: 'base'
 					})
 				);
 
@@ -320,8 +312,10 @@
 
 		try {
 			await remult.repo(Despesa).update(despesa.id, { paga: novoStatus });
-			// Atualiza localmente
-			despesa.paga = novoStatus;
+			// Atualiza localmente reatribuindo o array para disparar reatividade
+			despesas = despesas.map((item) =>
+				item.id === despesa.id ? { ...item, paga: novoStatus } : item
+			);
 		} catch (error) {
 			console.error('Erro ao alterar status da despesa:', error);
 			toaster.create({ description: 'Erro ao alterar status.', type: 'error' });

@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { remult } from 'remult';
 	import { onMount } from 'svelte';
 	import type { LayoutProps } from './$types';
 
-	let { children }: LayoutProps = $props();
+	let { children, data }: LayoutProps = $props();
+
+	let ehAdmin = $derived(data.isAdmin || remult.isAllowed('admin'));
 
 	onMount(async () => {
 		try {
@@ -22,12 +25,21 @@
 				<p class="font-semibold text-surface-900-100">{remult.user?.name ?? 'SEM NOME'}</p>
 			</div>
 
-			<form method="POST" action="/logout">
-				<button type="submit" class="btn preset-filled-surface-200-800">
-					<i class="fa-solid fa-right-from-bracket mr-2"></i>
-					Sair
-				</button>
-			</form>
+			<div class="flex items-center gap-2">
+				{#if ehAdmin}
+					<a href={resolve('/app/usuarios')} class="btn preset-filled-primary-200-800">
+						<i class="fa-solid fa-users-gear mr-2"></i>
+						Usuários
+					</a>
+				{/if}
+
+				<form method="POST" action="/logout">
+					<button type="submit" class="btn preset-filled-surface-200-800">
+						<i class="fa-solid fa-right-from-bracket mr-2"></i>
+						Sair
+					</button>
+				</form>
+			</div>
 		</div>
 	</div>
 

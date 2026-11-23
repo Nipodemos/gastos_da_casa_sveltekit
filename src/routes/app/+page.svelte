@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import type { PessoaCalculada } from '$lib/types';
 	import type { PageProps } from './$types';
 	import Despesas from './components/Despesas.svelte';
@@ -111,9 +109,9 @@ Enviar para Banco Inter`;
 	}
 </script>
 
-<div class="relative space-y-8 p-4">
+<div class="relative space-y-8">
 	<!-- Header -->
-	<header class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+	<header class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
 		<div>
 			<h2
 				class="bg-gradient-to-br from-primary-500 to-secondary-500 box-decoration-clone bg-clip-text h2 text-transparent"
@@ -123,12 +121,6 @@ Enviar para Banco Inter`;
 			<p class="text-surface-600-400">Um resumo financeiro do seu lar.</p>
 		</div>
 		<div class="flex items-center gap-2">
-			<button
-				class="btn preset-filled-secondary-200-800 transition-all hover:brightness-110"
-				onclick={() => goto(resolve('/app/despesas-fixas'))}
-			>
-				<i class="fa-solid fa-calendar-check mr-2"></i> Despesas Fixas
-			</button>
 			<button
 				class="btn {shareButtonClass} transition-all hover:brightness-110"
 				onclick={compartilharResumo}

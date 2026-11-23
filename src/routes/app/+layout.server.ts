@@ -10,7 +10,8 @@ const carregarLayoutDoApp: LayoutServerLoad = async () => {
 		throw redirect(303, `/`);
 	}
 	return {
-		isAdmin: remult.isAllowed('admin')
+		isAdmin: remult.isAllowed('admin'),
+		userName: remult.user?.name ?? ''
 	};
 };
 

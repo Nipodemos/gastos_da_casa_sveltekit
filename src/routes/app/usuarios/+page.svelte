@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import { createToaster } from '@skeletonlabs/skeleton-svelte';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { getContext } from 'svelte';
@@ -79,26 +77,16 @@
 	}
 </script>
 
-<div class="mx-auto max-w-5xl space-y-8 p-4">
-	<header class="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-		<div>
-			<h2
-				class="bg-gradient-to-br from-primary-500 to-secondary-500 box-decoration-clone bg-clip-text h2 text-transparent"
-			>
-				Gerenciamento de Usuários
-			</h2>
-			<p class="text-surface-600-400">
-				Área restrita ao administrador para criar contas isoladas no sistema.
-			</p>
-		</div>
-		<div class="flex items-center gap-2">
-			<button
-				class="btn preset-filled-surface-200-800 transition-all hover:brightness-110"
-				onclick={() => goto(resolve('/app'))}
-			>
-				<i class="fa-solid fa-arrow-left mr-2"></i> Voltar ao Dashboard
-			</button>
-		</div>
+<div class="space-y-8">
+	<header>
+		<h2
+			class="bg-gradient-to-br from-primary-500 to-secondary-500 box-decoration-clone bg-clip-text h2 text-transparent"
+		>
+			Gerenciamento de Usuários
+		</h2>
+		<p class="text-surface-600-400">
+			Área restrita ao administrador para criar contas isoladas no sistema.
+		</p>
 	</header>
 
 	<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
